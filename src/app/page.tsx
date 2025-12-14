@@ -1,95 +1,139 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+
+import React from 'react';
+import {Container, Box, Stack, Typography, useTheme, createTheme} from '@mui/material';
+import {
+  LoginCard,
+  LoginForm,
+  DividerWithText,
+  SocialLoginButton,
+  FooterLinks,
+} from '@/components/auth';
+
+export const theme = createTheme({
+  palette: {
+    mode: 'light',
+
+    primary: {
+      main: '#6D4C41',
+      dark: '#4E342E',
+      contrastText: '#FFFFFF',
+    },
+
+    secondary: {
+      main: '#D7CCC8',
+      contrastText: '#3E2723',
+    },
+
+    background: {
+      default: '#FFFFFF',
+      paper: '#FAF7F5',
+    },
+
+    text: {
+      primary: '#3E2723',
+      secondary: '#6D4C41',
+    },
+
+    divider: '#E0D7D3',
+
+    error: {
+      main: '#C62828',
+    },
+  },
+
+  typography: {
+    fontFamily: `'Roboto', 'Helvetica', 'Arial', sans-serif`,
+
+    h1: {
+      fontWeight: 700,
+      color: '#3E2723',
+    },
+    h2: {
+      fontWeight: 600,
+      color: '#3E2723',
+    },
+  },
+})
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const theme = useTheme();
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  const handleLogin = (data: { email: string; password: string }) => {
+    console.log('Login submitted:', data);
+  };
+
+  const handleGoogleLogin = () => {
+    console.log('Google login clicked');
+  };
+
+
+  return (
+    <Container
+      maxWidth={false}
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 5,
+        py: 3,
+        background: 'background: linear-gradient( 135deg, #EFEFEF 0%, #E2E2E2 30%, #D3D3D3 55%, #E2E2E2 80%, #F1F1F1 100% )',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          //background: 'radial-gradient(circle at 20% 50%, rgba(109, 76, 65, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(215, 204, 200, 0.15) 0%, transparent 50%)',
+          filter: 'blur(60px)',
+          zIndex: 0,
+        },
+      }}
+    >
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: '400px',
+          display: 'flex',
+          justifyContent: 'center',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <LoginCard>
+          <Stack spacing={1} alignItems="center">
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 600,
+                color: theme.palette.text.primary,
+                textAlign: 'center',
+              }}
+            >
+              Chào mừng trở lại
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: theme.palette.text.secondary,
+                textAlign: 'center',
+              }}
+            >
+              Đăng nhập để tiếp tục
+            </Typography>
+          </Stack>
+          <LoginForm onSubmit={handleLogin} />
+          <DividerWithText />
+          <SocialLoginButton provider="google" onClick={handleGoogleLogin} />
+        </LoginCard>
+      </Box>
+      <Box sx={{ position: 'relative', zIndex: 1 }}>
+        <FooterLinks />
+      </Box>
+    </Container>
   );
 }
