@@ -1,0 +1,191 @@
+'use client';
+
+import * as React from 'react';
+import {
+  Box,
+  Paper,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  Stack,
+  Chip,
+  IconButton,
+  TextField,
+  InputAdornment,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SearchIcon from '@mui/icons-material/Search';
+
+// Mock data
+const mockEmployees = [
+  {
+    id: 1,
+    name: 'Nguyễn Văn A',
+    email: 'nguyenvana@example.com',
+    position: 'Nhân viên',
+    department: 'Kỹ thuật',
+    status: 'active',
+  },
+  {
+    id: 2,
+    name: 'Trần Thị B',
+    email: 'tranthib@example.com',
+    position: 'Quản lý',
+    department: 'Kinh doanh',
+    status: 'active',
+  },
+  {
+    id: 3,
+    name: 'Lê Văn C',
+    email: 'levanc@example.com',
+    position: 'Nhân viên',
+    department: 'Hành chính',
+    status: 'inactive',
+  },
+];
+
+export default function EmployeesPage() {
+  const [searchQuery, setSearchQuery] = React.useState('');
+
+  const handleAddEmployee = () => {
+    console.log('Add new employee');
+    // TODO: Open dialog or navigate to add employee page
+  };
+
+  const handleEditEmployee = (id: number) => {
+    console.log('Edit employee:', id);
+    // TODO: Open edit dialog or navigate to edit page
+  };
+
+  const handleDeleteEmployee = (id: number) => {
+    console.log('Delete employee:', id);
+    // TODO: Show confirmation dialog and delete
+  };
+
+  const filteredEmployees = mockEmployees.filter((employee) =>
+    employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    employee.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <Box sx={{ width: '100%', p: 3 }}>
+      {/* Header */}
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+          Quản Lý Nhân Viên
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleAddEmployee}
+          sx={{
+            borderRadius: '8px',
+            textTransform: 'none',
+            px: 3,
+          }}
+        >
+          Thêm Nhân Viên
+        </Button>
+      </Stack>
+
+      {/* Search Bar */}
+      <Box mb={3}>
+        <TextField
+          fullWidth
+          placeholder="Tìm kiếm theo tên hoặc email..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            maxWidth: 500,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '8px',
+            },
+          }}
+        />
+      </Box>
+
+      {/* Employee Table */}
+      <TableContainer component={Paper} elevation={2}>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
+              <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Họ Tên</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Chức Vụ</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Phòng Ban</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Trạng Thái</TableCell>
+              <TableCell sx={{ fontWeight: 600 }} align="right">
+                Thao Tác
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredEmployees.map((employee) => (
+              <TableRow
+                key={employee.id}
+                sx={{ '&:hover': { backgroundColor: '#F9F9F9' } }}
+              >
+                <TableCell>{employee.id}</TableCell>
+                <TableCell>{employee.name}</TableCell>
+                <TableCell>{employee.email}</TableCell>
+                <TableCell>{employee.position}</TableCell>
+                <TableCell>{employee.department}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={employee.status === 'active' ? 'Hoạt động' : 'Ngừng hoạt động'}
+                    color={employee.status === 'active' ? 'success' : 'default'}
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell align="right">
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    onClick={() => handleEditEmployee(employee.id)}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleDeleteEmployee(employee.id)}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {filteredEmployees.length === 0 && (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography color="text.secondary">
+            Không tìm thấy nhân viên nào
+          </Typography>
+        </Box>
+      )}
+    </Box>
+  );
+}

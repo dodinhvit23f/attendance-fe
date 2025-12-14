@@ -28,7 +28,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
   return (
     <Stack component="form" onSubmit={handleSubmit} spacing={2}>
       <TextField
-        label="Tài khoản *"
+        label="Tài khoản"
         placeholder="Email hoặc tên tài khoản"
         type="email"
         fullWidth

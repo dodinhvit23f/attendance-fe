@@ -14,9 +14,11 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
+    "@toolpad/core": "^0.16.0",
     "next": "15.5.9",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "react-qr-code": "^2.0.18"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",

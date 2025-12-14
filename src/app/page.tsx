@@ -80,17 +80,6 @@ export default function Home() {
         py: 3,
         background: 'linear-gradient(151deg, #ffffff 0%, #fff5f5 30%, #fdfdfd 55%, #ebebeb 80%, #F1F1F1 100%)',
         position: 'relative',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          //background: 'radial-gradient(circle at 20% 50%, rgba(109, 76, 65, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(215, 204, 200, 0.15) 0%, transparent 50%)',
-          filter: 'blur(60px)',
-          zIndex: 0,
-        },
       }}
     >
       <Box
