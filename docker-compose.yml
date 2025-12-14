@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  attendance-fe:
+    image: attendance-fe:1.0.0
+    container_name: attendance-fe
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "80:3000"
