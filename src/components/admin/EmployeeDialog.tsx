@@ -185,9 +185,11 @@ export const EmployeeDialog: React.FC<EmployeeDialogProps> = ({
       onClose={handleClose}
       maxWidth="md"
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: '12px',
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: '12px',
+          },
         },
       }}
     >
@@ -386,17 +388,19 @@ export const EmployeeDialog: React.FC<EmployeeDialogProps> = ({
                 error={!!errors.defaultPassword}
                 helperText={errors.defaultPassword || 'Tối thiểu 6 ký tự'}
                 placeholder="••••••••"
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {

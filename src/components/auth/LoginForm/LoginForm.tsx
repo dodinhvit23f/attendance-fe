@@ -66,18 +66,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton
-                onClick={handleTogglePassword}
-                edge="end"
-                aria-label="toggle password visibility"
-              >
-                {showPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
-            </InputAdornment>
-          ),
+        slotProps={{
+          input: {
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={handleTogglePassword}
+                  edge="end"
+                  aria-label="toggle password visibility"
+                >
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          },
         }}
         sx={{
           '& .MuiOutlinedInput-root': {

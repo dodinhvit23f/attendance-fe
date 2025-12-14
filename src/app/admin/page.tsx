@@ -63,7 +63,7 @@ export default function AdminDashboard() {
 
       {/* Statistics Cards */}
       <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid sx={{xs:12 ,sm:6, md:3}} >
           <StatCard
             title="Tổng Nhân Viên"
             value={45}
@@ -71,7 +71,7 @@ export default function AdminDashboard() {
             color="#6D4C41"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid sx={{xs:12 ,sm:6, md:3}} >
           <StatCard
             title="Có Mặt Hôm Nay"
             value={38}
@@ -79,7 +79,7 @@ export default function AdminDashboard() {
             color="#4CAF50"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid sx={{xs:12 ,sm:6, md:3}} >
           <StatCard
             title="Tổng Điểm Danh"
             value={1247}
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
             color="#2196F3"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid sx={{xs:12 ,sm:6, md:3}} >
           <StatCard
             title="Tỷ Lệ Tham Dự"
             value="84%"

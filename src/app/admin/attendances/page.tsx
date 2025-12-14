@@ -139,12 +139,14 @@ export default function AttendancesPage() {
           placeholder="Tìm kiếm theo tên nhân viên..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            },
           }}
           sx={{
             flexGrow: 1,
@@ -277,7 +279,7 @@ export default function AttendancesPage() {
                 <TableCell>{attendance.duration}</TableCell>
                 <TableCell>
                   <Chip
-                    icon={getStatusIcon(attendance.status)}
+                    //icon={getStatusIcon(attendance.status)}
                     label={getStatusLabel(attendance.status)}
                     color={getStatusColor(attendance.status)}
                     size="small"

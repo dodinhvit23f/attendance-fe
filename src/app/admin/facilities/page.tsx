@@ -164,12 +164,14 @@ export default function FacilitiesPage() {
           placeholder="Tìm kiếm theo tên hoặc địa chỉ..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            },
           }}
           sx={{
             maxWidth: 500,

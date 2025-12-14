@@ -149,9 +149,11 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
       onClose={handleClose}
       maxWidth="md"
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: '12px',
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: '12px',
+          },
         },
       }}
     >

@@ -72,9 +72,9 @@ export default function AdminLayout({
           }}
           theme={theme}
           router={{
-            pathname,
+            pathname: `${pathname}`,
             searchParams: new URLSearchParams(),
-            navigate: handleNavigation,
+            navigate: (path) => router.push(path.toString()),
           }}
       >
         <DashboardLayout defaultSidebarCollapsed>
