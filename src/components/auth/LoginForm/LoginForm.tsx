@@ -84,12 +84,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
             borderRadius: '12px',
             backgroundColor: '#FFFFFF',
             '& fieldset': {
-              borderColor: theme.palette.divider,
+              borderWidth: '2px',
+              borderColor: '#D0D0D0',
             },
             '&:hover fieldset': {
+              borderWidth: '2px',
               borderColor: theme.palette.primary.main,
             },
             '&.Mui-focused fieldset': {
+              borderWidth: '2px',
               borderColor: theme.palette.primary.main,
             },
           },

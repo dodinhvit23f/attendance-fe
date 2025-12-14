@@ -6,7 +6,6 @@ import {
   LoginCard,
   LoginForm,
   DividerWithText,
-  SocialLoginButton,
   FooterLinks,
 } from '@/components/auth';
 
@@ -79,7 +78,7 @@ export default function Home() {
         justifyContent: 'center',
         gap: 5,
         py: 3,
-        background: 'background: linear-gradient( 135deg, #EFEFEF 0%, #E2E2E2 30%, #D3D3D3 55%, #E2E2E2 80%, #F1F1F1 100% )',
+        background: 'linear-gradient(151deg, #ffffff 0%, #fff5f5 30%, #fdfdfd 55%, #ebebeb 80%, #F1F1F1 100%)',
         position: 'relative',
         '&::before': {
           content: '""',
@@ -128,12 +127,13 @@ export default function Home() {
           </Stack>
           <LoginForm onSubmit={handleLogin} />
           <DividerWithText />
-          <SocialLoginButton provider="google" onClick={handleGoogleLogin} />
+          <Box sx={{ position: 'relative', zIndex: 1 }}>
+            <FooterLinks />
+          </Box>
+
         </LoginCard>
       </Box>
-      <Box sx={{ position: 'relative', zIndex: 1 }}>
-        <FooterLinks />
-      </Box>
+
     </Container>
   );
 }

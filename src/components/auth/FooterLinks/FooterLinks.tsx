@@ -33,7 +33,7 @@ export const FooterLinks: React.FC = () => {
           textUnderlineOffset: '4px',
         }}
       >
-        Mở App
+        Quảng Cáo
       </Link>
     </Stack>
   );
