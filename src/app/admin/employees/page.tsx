@@ -22,6 +22,15 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
+import { EmployeeDialog, EmployeeData, Facility } from '@/components/admin';
+
+// Mock facilities data
+const mockFacilities: Facility[] = [
+  { id: 1, name: 'Văn phòng Hà Nội' },
+  { id: 2, name: 'Chi nhánh Hồ Chí Minh' },
+  { id: 3, name: 'Văn phòng Đà Nẵng' },
+  { id: 4, name: 'Chi nhánh Cần Thơ' },
+];
 
 // Mock data
 const mockEmployees = [
@@ -53,20 +62,49 @@ const mockEmployees = [
 
 export default function EmployeesPage() {
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [selectedEmployee, setSelectedEmployee] = React.useState<EmployeeData | null>(null);
 
   const handleAddEmployee = () => {
-    console.log('Add new employee');
-    // TODO: Open dialog or navigate to add employee page
+    setSelectedEmployee(null);
+    setDialogOpen(true);
   };
 
   const handleEditEmployee = (id: number) => {
-    console.log('Edit employee:', id);
-    // TODO: Open edit dialog or navigate to edit page
+    const employee = mockEmployees.find((e) => e.id === id);
+    if (employee) {
+      // Map mock data to EmployeeData format
+      setSelectedEmployee({
+        id: employee.id,
+        name: employee.name,
+        phoneNumber: '0123456789', // Mock phone - replace with actual data
+        email: employee.email,
+        address: '123 Đường Láng, Đống Đa, Hà Nội', // Mock address - replace with actual data
+        gender: 'male', // Mock gender - replace with actual data
+        accountName: employee.email.split('@')[0],
+        role: employee.position === 'Quản lý' ? 'manager' : 'employee',
+        defaultPassword: '',
+        facilityIds: [1, 2], // Mock facility IDs - replace with actual data
+      });
+      setDialogOpen(true);
+    }
   };
 
   const handleDeleteEmployee = (id: number) => {
     console.log('Delete employee:', id);
     // TODO: Show confirmation dialog and delete
+  };
+
+  const handleSaveEmployee = (employeeData: EmployeeData) => {
+    console.log('Save employee:', employeeData);
+    // TODO: Add API call to save employee
+    // If editing: PUT /api/employees/:id
+    // If creating: POST /api/employees
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setSelectedEmployee(null);
   };
 
   const filteredEmployees = mockEmployees.filter((employee) =>
@@ -186,6 +224,15 @@ export default function EmployeesPage() {
           </Typography>
         </Box>
       )}
+
+      {/* Employee Dialog */}
+      <EmployeeDialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        onSave={handleSaveEmployee}
+        employee={selectedEmployee}
+        facilities={mockFacilities}
+      />
     </Box>
   );
 }

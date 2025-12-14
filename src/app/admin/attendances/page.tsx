@@ -130,7 +130,7 @@ export default function AttendancesPage() {
     <Box sx={{ width: '100%', p: 3 }}>
       {/* Header */}
       <Typography variant="h4" component="h1" sx={{ fontWeight: 600, mb: 3 }}>
-        Quản Lý Điểm Danh
+        Quản Lý Chấm Công
       </Typography>
 
       {/* Filters */}

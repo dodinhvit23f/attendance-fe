@@ -20,14 +20,14 @@ const NAVIGATION: Navigation = [
     icon: <PeopleIcon/>,
   },
   {
-    segment: 'admin/attendances',
-    title: 'Chấm Công',
-    icon: <AssignmentIcon/>,
-  },
-  {
     segment: 'admin/facilities',
     title: 'Cơ Sở',
     icon: <BusinessIcon/>,
+  },
+  {
+    segment: 'admin/attendances',
+    title: 'Chấm Công',
+    icon: <AssignmentIcon/>,
   },
   {
     kind: 'divider',
