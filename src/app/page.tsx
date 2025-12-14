@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import {Container, Box, Stack, Typography, useTheme, createTheme} from '@mui/material';
+import {Container, Box, Stack, Typography, useTheme, createTheme, Theme} from '@mui/material';
 import {
   LoginCard,
   LoginForm,
@@ -9,7 +9,7 @@ import {
   FooterLinks,
 } from '@/components/auth';
 
-export const theme = createTheme({
+export const theme : Theme = createTheme({
   palette: {
     mode: 'light',
 

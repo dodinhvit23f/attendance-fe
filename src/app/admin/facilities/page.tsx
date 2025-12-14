@@ -17,12 +17,14 @@ import {
   IconButton,
   TextField,
   InputAdornment,
+  Pagination,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import { FacilityDialog, FacilityData } from '@/components/admin';
 
 // Mock data
 const mockFacilities = [
@@ -62,15 +64,27 @@ const mockFacilities = [
 
 export default function FacilitiesPage() {
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [selectedFacility, setSelectedFacility] = React.useState<FacilityData | null>(null);
+  const [page, setPage] = React.useState(1);
+  const pageSize = 10;
 
   const handleAddFacility = () => {
-    console.log('Add new facility');
-    // TODO: Open dialog or navigate to add facility page
+    setSelectedFacility(null);
+    setDialogOpen(true);
   };
 
   const handleEditFacility = (id: number) => {
-    console.log('Edit facility:', id);
-    // TODO: Open edit dialog or navigate to edit page
+    const facility = mockFacilities.find((f) => f.id === id);
+    if (facility) {
+      setSelectedFacility({
+        ...facility,
+        latitude: 21.0285, // Mock coordinates - replace with actual data
+        longitude: 105.8542,
+        status: facility.status as 'active' | 'inactive',
+      });
+      setDialogOpen(true);
+    }
   };
 
   const handleDeleteFacility = (id: number) => {
@@ -78,10 +92,37 @@ export default function FacilitiesPage() {
     // TODO: Show confirmation dialog and delete
   };
 
+  const handleSaveFacility = (facilityData: FacilityData) => {
+    console.log('Save facility:', facilityData);
+    // TODO: Add API call to save facility
+    // If editing: PUT /api/facilities/:id
+    // If creating: POST /api/facilities
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setSelectedFacility(null);
+  };
+
   const filteredFacilities = mockFacilities.filter((facility) =>
     facility.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     facility.address.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredFacilities.length / pageSize);
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedFacilities = filteredFacilities.slice(startIndex, endIndex);
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value);
+  };
+
+  // Reset to page 1 when search query changes
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
 
   const getOccupancyColor = (current: number, capacity: number) => {
     const percentage = (current / capacity) * 100;
@@ -147,9 +188,6 @@ export default function FacilitiesPage() {
               <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Tên Cơ Sở</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Địa Chỉ</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Sức Chứa</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Hiện Tại</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Tỷ Lệ Lấp Đầy</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Trạng Thái</TableCell>
               <TableCell sx={{ fontWeight: 600 }} align="right">
                 Thao Tác
@@ -157,7 +195,7 @@ export default function FacilitiesPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredFacilities.map((facility) => {
+            {paginatedFacilities.map((facility) => {
               const occupancyPercentage = facility.capacity > 0
                 ? Math.round((facility.currentOccupancy / facility.capacity) * 100)
                 : 0;
@@ -176,18 +214,6 @@ export default function FacilitiesPage() {
                   </TableCell>
                   <TableCell sx={{ maxWidth: 300 }}>
                     {facility.address}
-                  </TableCell>
-                  <TableCell>{facility.capacity}</TableCell>
-                  <TableCell>{facility.currentOccupancy}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={`${occupancyPercentage}%`}
-                      color={getOccupancyColor(
-                        facility.currentOccupancy,
-                        facility.capacity
-                      )}
-                      size="small"
-                    />
                   </TableCell>
                   <TableCell>
                     <Chip
@@ -219,6 +245,32 @@ export default function FacilitiesPage() {
         </Table>
       </TableContainer>
 
+      {/* Pagination */}
+      {filteredFacilities.length > 0 && totalPages > 1 && (
+        <Stack spacing={2} alignItems="center" mt={3}>
+          {/* Pagination Info Text */}
+          <Typography variant="body2" color="text.secondary">
+            Hiển thị {startIndex + 1}-{Math.min(endIndex, filteredFacilities.length)} của {filteredFacilities.length} cơ sở
+          </Typography>
+
+          {/* Pagination Controls */}
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={handlePageChange}
+            color="primary"
+            size="large"
+            showFirstButton
+            showLastButton
+            sx={{
+              '& .MuiPaginationItem-root': {
+                borderRadius: '8px',
+              },
+            }}
+          />
+        </Stack>
+      )}
+
       {filteredFacilities.length === 0 && (
         <Box sx={{ textAlign: 'center', py: 4 }}>
           <Typography color="text.secondary">
@@ -227,44 +279,13 @@ export default function FacilitiesPage() {
         </Box>
       )}
 
-      {/* Summary Statistics */}
-      <Stack direction="row" spacing={2} mt={3}>
-        <Paper elevation={2} sx={{ p: 2, flexGrow: 1 }}>
-          <Typography variant="body2" color="text.secondary" mb={1}>
-            Tổng Cơ Sở
-          </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 600 }}>
-            {mockFacilities.length}
-          </Typography>
-        </Paper>
-
-        <Paper elevation={2} sx={{ p: 2, flexGrow: 1 }}>
-          <Typography variant="body2" color="text.secondary" mb={1}>
-            Tổng Sức Chứa
-          </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 600 }}>
-            {mockFacilities.reduce((sum, f) => sum + f.capacity, 0)}
-          </Typography>
-        </Paper>
-
-        <Paper elevation={2} sx={{ p: 2, flexGrow: 1 }}>
-          <Typography variant="body2" color="text.secondary" mb={1}>
-            Hiện Đang Sử Dụng
-          </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 600 }}>
-            {mockFacilities.reduce((sum, f) => sum + f.currentOccupancy, 0)}
-          </Typography>
-        </Paper>
-
-        <Paper elevation={2} sx={{ p: 2, flexGrow: 1 }}>
-          <Typography variant="body2" color="text.secondary" mb={1}>
-            Cơ Sở Hoạt Động
-          </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 600 }} color="success.main">
-            {mockFacilities.filter((f) => f.status === 'active').length}
-          </Typography>
-        </Paper>
-      </Stack>
+      {/* Facility Dialog */}
+      <FacilityDialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        onSave={handleSaveFacility}
+        facility={selectedFacility}
+      />
     </Box>
   );
 }
