@@ -31,6 +31,15 @@ interface OtpLoginResponse {
   };
 }
 
+interface OtpGenerateRequest {
+  tenant: string;
+}
+
+interface OtpGenerateResponse {
+  traceId: string;
+  data: string; // QR code URL
+}
+
 export const loginApi = async (
   email: string,
   password: string
@@ -83,6 +92,32 @@ export const otpLoginApi = async (otp: string): Promise<OtpLoginResponse> => {
       throw new Error(error.errorCodes?.[0] || 'OTP verification failed');
     }
 
+  }
+
+  return response.json();
+};
+
+export const otpGenerateApi = async (): Promise<OtpGenerateResponse> => {
+  const otpToken = localStorage.getItem(STORAGE_KEYS.OTP_TOKEN);
+
+  if (!otpToken) {
+    throw new Error('OTP token not found. Please login first.');
+  }
+
+  const response = await fetch(process.env.NEXT_PUBLIC_API_OTP_GENERATE!, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': otpToken,
+    },
+    body: JSON.stringify({
+      tenant: 'attendance',
+    } as OtpGenerateRequest),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.errorCodes?.[0] || 'OTP generation failed');
   }
 
   return response.json();
