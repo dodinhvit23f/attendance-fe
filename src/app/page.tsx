@@ -8,6 +8,8 @@ import {
   DividerWithText,
   FooterLinks,
 } from '@/components/auth';
+import { loginApi } from '@/lib/api/auth';
+import { useLoading } from '@/components/root/client-layout';
 
 export const theme : Theme = createTheme({
   palette: {
@@ -58,15 +60,6 @@ export const theme : Theme = createTheme({
 export default function Home() {
   const theme = useTheme();
 
-  const handleLogin = (data: { email: string; password: string }) => {
-    console.log('Login submitted:', data);
-  };
-
-  const handleGoogleLogin = () => {
-    console.log('Google login clicked');
-  };
-
-
   return (
     <Container
       maxWidth={false}
@@ -114,7 +107,7 @@ export default function Home() {
               Đăng nhập để tiếp tục
             </Typography>
           </Stack>
-          <LoginForm onSubmit={handleLogin} />
+          <LoginForm />
           <DividerWithText />
           <Box sx={{ position: 'relative', zIndex: 1 }}>
             <FooterLinks />
