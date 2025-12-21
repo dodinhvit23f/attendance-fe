@@ -1,17 +1,37 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Container, Box, Stack, Typography, useTheme, Paper } from '@mui/material';
 import { QRGenerator } from '@/components/qr/QRGenerator';
 import { FooterLinks } from '@/components/auth';
+import { useRouter } from 'next/navigation';
+import { useLoading } from '@/components/root/client-layout';
+import { STORAGE_KEYS } from '@/lib/constants/storage';
 
 export default function QRGeneratorPage() {
   const theme = useTheme();
+  const router = useRouter();
+  const { setLoading } = useLoading();
 
   const handleConfirm = (qrValue: string) => {
     console.log('QR Code confirmed:', qrValue);
     // TODO: Add navigation or API call logic here
   };
+
+  useEffect(() => {
+    // Check if OTP_TOKEN exists
+    const otpToken = localStorage.getItem(STORAGE_KEYS.OTP_TOKEN);
+
+    if (!otpToken || otpToken.trim() === '') {
+      // Redirect to home if OTP_TOKEN doesn't exist or is empty
+      router.push('/');
+      return;
+    }
+
+    setTimeout(() => {
+      setLoading(false)
+    }, 1000)
+  }, [router, setLoading]);
 
   return (
     <Container
@@ -24,7 +44,6 @@ export default function QRGeneratorPage() {
         justifyContent: 'center',
         gap: 5,
         py: 3,
-        background: 'linear-gradient(151deg, #ffffff 0%, #fff5f5 30%, #fdfdfd 55%, #ebebeb 80%, #F1F1F1 100%)',
         position: 'relative',
       }}
     >

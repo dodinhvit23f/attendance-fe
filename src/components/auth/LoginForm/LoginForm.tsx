@@ -7,6 +7,7 @@ import {useLoading} from "@/components/root/client-layout";
 import {loginApi} from "@/lib/api/auth";
 import {useNotify} from "@/components/notification/NotificationProvider";
 import {useRouter} from "next/navigation";
+import { STORAGE_KEYS } from '@/lib/constants/storage';
 
 
 interface LoginFormProps {
@@ -33,7 +34,7 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
     loginApi(email, password)
     .then((response) => {
       notifySuccess("Đăng nhập thành công")
-      localStorage.setItem("OTP_TOKEN", response.data.otpToken)
+      localStorage.setItem(STORAGE_KEYS.OTP_TOKEN, response.data.otpToken)
       if (response.data.requiredGenerateOTP) {
         router.push("/auth/qr/generator")
         return
