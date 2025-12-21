@@ -2,8 +2,9 @@ import type {Metadata} from "next";
 import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
 import ClientLayout from "@/components/root/client-layout";
-import {Alert, Snackbar} from "@mui/material";
 import EmotionCacheRegistry from "@/components/root/emotion-cache-registry";
+import {createTheme} from "@mui/material/styles";
+import {Theme} from "@mui/system";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
   title: "Solpyra Attendence",
   description: "Ứng Dụng Chấm Công Trực Tuyến",
 };
+
 
 export default function RootLayout({
                                      children,
@@ -38,3 +40,5 @@ export default function RootLayout({
       </html>
   );
 }
+
+

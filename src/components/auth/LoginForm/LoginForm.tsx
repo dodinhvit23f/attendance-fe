@@ -35,10 +35,10 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
       notifySuccess("Đăng nhập thành công")
       localStorage.setItem("OTP_TOKEN", response.data.otpToken)
       if (response.data.requiredGenerateOTP) {
-        router.push("/auth/generator")
+        router.push("/auth/qr/generator")
         return
       }
-      router.push("/auth/verify")
+      router.push("/auth/qr/verify")
     })
     .catch((reason) => {
       if (reason.message == 'ERROR_005') {
