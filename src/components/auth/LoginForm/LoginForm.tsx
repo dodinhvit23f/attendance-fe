@@ -21,6 +21,7 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
   const {setLoading} = useLoading()
   const {notifySuccess, notifyError} = useNotify();
   const router = useRouter()
+
   const handleGoogleLogin = () => {
     console.log('Google login clicked');
   };
@@ -34,12 +35,10 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
       notifySuccess("Đăng nhập thành công")
       localStorage.setItem("OTP_TOKEN", response.data.otpToken)
       if (response.data.requiredGenerateOTP) {
-        router.push("/auth/verify")
+        router.push("/auth/generator")
         return
       }
-
-      router.push("/auth/generator")
-
+      router.push("/auth/verify")
     })
     .catch((reason) => {
       if (reason.message == 'ERROR_005') {

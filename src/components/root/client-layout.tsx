@@ -1,6 +1,6 @@
 "use client"
 import * as React from "react";
-import {createContext, useContext, useState} from "react";
+import {createContext, useContext, useEffect, useState} from "react";
 import {CssBaseline, ThemeProvider} from "@mui/material";
 import {theme} from "@/app/page";
 import {LoadingScreen} from "@/components/auth/LoadingScreen/loading-screen";
@@ -16,14 +16,16 @@ export default function ClientLayout({children}: { children: React.ReactNode; })
   const [isLoading, setLoading] = useState(true)
 
   return (
-      <LoadingContext.Provider value={{setLoading}}>
-        <NotificationProvider>
-          <ThemeProvider theme={theme}>
+
+      <NotificationProvider>
+        <ThemeProvider theme={theme}>
+          <LoadingContext.Provider value={{isLoading, setLoading}}>
             <CssBaseline/>
             {isLoading ? <LoadingScreen/> : <></>}
             {children}
-          </ThemeProvider>
-        </NotificationProvider>
-      </LoadingContext.Provider>
+          </LoadingContext.Provider>
+        </ThemeProvider>
+      </NotificationProvider>
+
   )
 }

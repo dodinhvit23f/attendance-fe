@@ -1,12 +1,18 @@
 'use client';
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import { Container, Box, Stack, Typography, useTheme, Paper } from '@mui/material';
 import { CodeVerification } from '@/components/qr/CodeVerification';
 import { FooterLinks } from '@/components/auth';
+import {useLoading} from "@/components/root/client-layout";
+import {useNotify} from "@/components/notification/NotificationProvider";
+import {useRouter} from "next/navigation";
 
 export default function QRVerifyPage() {
   const theme = useTheme();
+  const {setLoading} = useLoading()
+  const {notifySuccess, notifyError} = useNotify();
+  const router = useRouter()
 
   const handleConfirm = (code: string) => {
     console.log('Verification code confirmed:', code);
@@ -18,6 +24,10 @@ export default function QRVerifyPage() {
     //   body: JSON.stringify({ code }),
     // });
   };
+
+  useEffect(() => {
+    setLoading(false)
+  }, [setLoading]);
 
   return (
     <Container
