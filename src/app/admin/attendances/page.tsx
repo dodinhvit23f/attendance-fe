@@ -24,6 +24,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { useEffect } from 'react';
+import { useLoading } from '@/components/root/client-layout';
 
 // Mock data
 const mockAttendances = [
@@ -114,8 +116,13 @@ const getStatusIcon = (status: string) => {
 };
 
 export default function AttendancesPage() {
+  const { setLoading } = useLoading();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState('all');
+
+  useEffect(() => {
+    setLoading(false);
+  }, []);
 
   const filteredAttendances = mockAttendances.filter((attendance) => {
     const matchesSearch = attendance.employeeName

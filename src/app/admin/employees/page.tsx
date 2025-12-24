@@ -23,6 +23,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import { EmployeeDialog, EmployeeData, Facility } from '@/components/admin';
+import { useEffect } from 'react';
+import { useLoading } from '@/components/root/client-layout';
 
 // Mock facilities data
 const mockFacilities: Facility[] = [
@@ -61,9 +63,14 @@ const mockEmployees = [
 ];
 
 export default function EmployeesPage() {
+  const { setLoading } = useLoading();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [selectedEmployee, setSelectedEmployee] = React.useState<EmployeeData | null>(null);
+
+  useEffect(() => {
+    setLoading(false);
+  }, []);
 
   const handleAddEmployee = () => {
     setSelectedEmployee(null);

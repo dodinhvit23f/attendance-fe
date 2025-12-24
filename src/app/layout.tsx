@@ -3,8 +3,6 @@ import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
 import ClientLayout from "@/components/root/client-layout";
 import EmotionCacheRegistry from "@/components/root/emotion-cache-registry";
-import {createTheme} from "@mui/material/styles";
-import {Theme} from "@mui/system";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

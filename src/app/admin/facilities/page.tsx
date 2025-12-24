@@ -25,6 +25,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { FacilityDialog, FacilityData } from '@/components/admin';
+import { useLoading } from '@/components/root/client-layout';
 
 // Mock data
 const mockFacilities = [
@@ -63,11 +64,16 @@ const mockFacilities = [
 ];
 
 export default function FacilitiesPage() {
+  const { setLoading } = useLoading();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [selectedFacility, setSelectedFacility] = React.useState<FacilityData | null>(null);
   const [page, setPage] = React.useState(1);
   const pageSize = 10;
+
+  React.useEffect(() => {
+    setLoading(false);
+  }, []);
 
   const handleAddFacility = () => {
     setSelectedFacility(null);
