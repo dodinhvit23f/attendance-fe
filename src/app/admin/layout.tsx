@@ -4,13 +4,12 @@ import * as React from 'react';
 import {AppProvider} from '@toolpad/core/AppProvider';
 import {DashboardLayout} from '@toolpad/core/DashboardLayout';
 import {Navigation, NotificationsProvider} from '@toolpad/core';
-import {useRouter, usePathname} from 'next/navigation';
-import {createTheme} from '@mui/material/styles';
+import {usePathname, useRouter} from 'next/navigation';
 import PeopleIcon from '@mui/icons-material/People';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import BusinessIcon from '@mui/icons-material/Business';
 import LogoutIcon from '@mui/icons-material/Logout';
-import {theme} from "@/app/page";
+import {theme} from "@/components/root/client-layout";
 
 // Navigation configuration
 const NAVIGATION: Navigation = [
@@ -49,15 +48,13 @@ export default function AdminLayout({
 
   // Handle navigation
   const handleNavigation = React.useCallback(
-      (path: string) => {
-        if (path === '/admin/logout') {
-          // Handle logout
-          console.log('Logging out...');
-          // TODO: Add logout logic here
-          // Example: clear session, redirect to login
-          router.push('/');
+      (path: string | URL) => {
+        const pathString = path.toString();
+        if (pathString === '/logout' || pathString === '/admin/logout') {
+          // Redirect to logout page
+          router.push('/logout');
         } else {
-          router.push(path);
+          router.push(pathString);
         }
       },
       [router]
@@ -69,12 +66,13 @@ export default function AdminLayout({
           branding={{
             title: 'Quản Trị Viên',
             logo: <AssignmentIcon/>,
+            homeUrl: '/admin',
           }}
           theme={theme}
           router={{
-            pathname: `${pathname}`,
+            pathname: `/${pathname}`,
             searchParams: new URLSearchParams(),
-            navigate: (path) => router.push(path.toString()),
+            navigate: handleNavigation,
           }}
       >
         <DashboardLayout defaultSidebarCollapsed>
