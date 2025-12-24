@@ -1,24 +1,57 @@
 'use client';
 
-import React from 'react';
-import {Box, Button, Stack, Typography, useTheme} from '@mui/material';
+import React, {useState} from 'react';
+import {Box, Button, Stack, TextField, Typography, useTheme} from '@mui/material';
 import {CheckCircle} from '@mui/icons-material';
 import QRCode from 'react-qr-code';
+import {otpVerifyApi} from '@/lib/api/auth';
+import {useRouter} from 'next/navigation';
 
 interface QRGeneratorProps {
-  onConfirm?: (qrData: string) => void;
   qrData?: string; // OTP auth URL or any data to encode
+  setLoading?: (loading: boolean) => void;
+  notifySuccess?: (message: string) => void;
+  notifyError?: (message: string) => void;
 }
 
 export const QRGenerator: React.FC<QRGeneratorProps> = ({
-  onConfirm,
-  qrData
+  qrData,
+  setLoading,
+  notifySuccess,
+  notifyError
 }) => {
   const theme = useTheme();
+  const router = useRouter();
+  const [otp, setOtp] = useState('');
 
-  const handleConfirm = () => {
-    if (onConfirm && qrData) {
-      onConfirm(qrData);
+  const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    if (value.length <= 6) {
+      setOtp(value);
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (otp.length !== 6) {
+      notifyError?.('Vui lòng nhập đầy đủ số OTP');
+      return;
+    }
+
+    try {
+      setLoading?.(true);
+      await otpVerifyApi(otp);
+      notifySuccess?.('Xác thực OTP thành công');
+      router.push('/');
+    } catch (error) {
+      if (error instanceof Error && (error as any).status === 401) {
+        router.push('/');
+        return;
+      }
+      if (error instanceof Error) {
+        notifyError?.('Mã OTP không chính xác. Vui lòng thử lại.');
+      }
+    } finally {
+      setLoading?.(false);
     }
   };
 
@@ -66,6 +99,45 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
           >
             Quét mã QR này với ứng dụng xác thực (Google Authenticator, Authy...)
           </Typography>
+
+          <TextField
+            label="Mã OTP"
+            placeholder="Nhập Số OTP"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={otp}
+            onChange={handleOtpChange}
+            slotProps={{
+              htmlInput: {
+                maxLength: 6,
+                inputMode: 'numeric',
+                pattern: '[0-9]*',
+              },
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                backgroundColor: '#FFFFFF',
+                '& fieldset': {
+                  borderColor: theme.palette.divider,
+                },
+                '&:hover fieldset': {
+                  borderColor: theme.palette.primary.main,
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+              '& .MuiOutlinedInput-input': {
+                padding: '12px 16px',
+                fontSize: '16px',
+                textAlign: 'center',
+                letterSpacing: '0.5em',
+                fontWeight: 600,
+              },
+            }}
+          />
 
           <Button
             variant="contained"

@@ -13,13 +13,8 @@ export default function QRGeneratorPage() {
   const theme = useTheme();
   const router = useRouter();
   const {setLoading} = useLoading();
-  const {notifyError} = useNotify();
+  const {notifySuccess, notifyError} = useNotify();
   const [qrData, setQrData] = useState<string>('');
-
-  const handleConfirm = (qrValue: string) => {
-    console.log('QR Code confirmed:', qrValue);
-    // TODO: Add navigation or API call logic here
-  };
 
   useEffect(() => {
     const fetchQrData = async () => {
@@ -111,7 +106,12 @@ export default function QRGeneratorPage() {
               </Stack>
 
               {/* QR Generator Component */}
-              <QRGenerator qrData={qrData}/>
+              <QRGenerator
+                qrData={qrData}
+                setLoading={setLoading}
+                notifySuccess={notifySuccess}
+                notifyError={notifyError}
+              />
             </Stack>
           </Paper>
         </Box>
