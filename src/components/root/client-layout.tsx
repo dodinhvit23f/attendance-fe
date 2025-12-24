@@ -5,7 +5,6 @@ import {Box, CssBaseline, ThemeProvider} from "@mui/material";
 
 import {LoadingScreen} from "@/components/auth/LoadingScreen/loading-screen";
 import {NotificationProvider} from "@/components/notification/NotificationProvider";
-import {Theme} from "@mui/system";
 import {createTheme} from "@mui/material/styles";
 
 
@@ -15,7 +14,7 @@ export function useLoading() {
   return useContext(LoadingContext)
 }
 
-export const theme : Theme = createTheme({
+export const theme = createTheme({
   palette: {
     mode: 'light',
 
