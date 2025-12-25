@@ -13,10 +13,11 @@ import {
   TableRow,
   Button,
   Stack,
-  Chip,
   IconButton,
   TextField,
   InputAdornment,
+  TablePagination,
+  Switch,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -25,6 +26,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import { EmployeeDialog, EmployeeData, Facility } from '@/components/admin';
 import { useEffect } from 'react';
 import { useLoading } from '@/components/root/client-layout';
+import { getEmployees, Employee } from '@/lib/api/admin';
 
 // Mock facilities data
 const mockFacilities: Facility[] = [
@@ -34,43 +36,39 @@ const mockFacilities: Facility[] = [
   { id: 4, name: 'Chi nhánh Cần Thơ' },
 ];
 
-// Mock data
-const mockEmployees = [
-  {
-    id: 1,
-    name: 'Nguyễn Văn A',
-    email: 'nguyenvana@example.com',
-    position: 'Nhân viên',
-    department: 'Kỹ thuật',
-    status: 'active',
-  },
-  {
-    id: 2,
-    name: 'Trần Thị B',
-    email: 'tranthib@example.com',
-    position: 'Quản lý',
-    department: 'Kinh doanh',
-    status: 'active',
-  },
-  {
-    id: 3,
-    name: 'Lê Văn C',
-    email: 'levanc@example.com',
-    position: 'Nhân viên',
-    department: 'Hành chính',
-    status: 'inactive',
-  },
-];
-
 export default function EmployeesPage() {
   const { setLoading } = useLoading();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [selectedEmployee, setSelectedEmployee] = React.useState<EmployeeData | null>(null);
+  const [employees, setEmployees] = React.useState<Employee[]>([]);
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [totalElements, setTotalElements] = React.useState(0);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getEmployees({
+        page,
+        size: rowsPerPage,
+        tenant: 'attendance',
+      });
+      setEmployees(response.data.employees);
+      setTotalElements(response.data.totalElements);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch employees');
+      console.error('Error fetching employees:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setLoading(false);
-  }, []);
+    fetchEmployees();
+  }, [page, rowsPerPage]);
 
   const handleAddEmployee = () => {
     setSelectedEmployee(null);
@@ -78,20 +76,20 @@ export default function EmployeesPage() {
   };
 
   const handleEditEmployee = (id: number) => {
-    const employee = mockEmployees.find((e) => e.id === id);
+    const employee = employees.find((e) => e.id === id);
     if (employee) {
-      // Map mock data to EmployeeData format
+      // Map API data to EmployeeData format
       setSelectedEmployee({
         id: employee.id,
-        name: employee.name,
-        phoneNumber: '0123456789', // Mock phone - replace with actual data
+        name: employee.fullName,
+        phoneNumber: '0123456789', // TODO: Add phone number to API response
         email: employee.email,
-        address: '123 Đường Láng, Đống Đa, Hà Nội', // Mock address - replace with actual data
-        gender: 'male', // Mock gender - replace with actual data
-        accountName: employee.email.split('@')[0],
-        role: employee.position === 'Quản lý' ? 'manager' : 'employee',
+        address: '123 Đường Láng, Đống Đa, Hà Nội', // TODO: Add address to API response
+        gender: employee.gender.toLowerCase() as 'male' | 'female' | 'other',
+        accountName: employee.employeeId,
+        role: 'employee', // TODO: Add role to API response
         defaultPassword: '',
-        facilityIds: [1, 2], // Mock facility IDs - replace with actual data
+        facilityIds: [1, 2], // TODO: Add facility IDs to API response
       });
       setDialogOpen(true);
     }
@@ -109,13 +107,46 @@ export default function EmployeesPage() {
     // If creating: POST /api/employees
   };
 
+  const handleToggleStatus = async (id: number, currentStatus: boolean) => {
+    try {
+      // TODO: Add API call to update employee status
+      // Example: await updateEmployeeStatus(id, !currentStatus);
+
+      // Optimistically update UI
+      setEmployees((prevEmployees) =>
+        prevEmployees.map((emp) =>
+          emp.id === id ? { ...emp, active: !currentStatus } : emp
+        )
+      );
+
+      console.log(`Toggle status for employee ${id} to ${!currentStatus}`);
+    } catch (err) {
+      console.error('Error updating employee status:', err);
+      // Revert on error
+      setEmployees((prevEmployees) =>
+        prevEmployees.map((emp) =>
+          emp.id === id ? { ...emp, active: currentStatus } : emp
+        )
+      );
+    }
+  };
+
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setSelectedEmployee(null);
   };
 
-  const filteredEmployees = mockEmployees.filter((employee) =>
-    employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const filteredEmployees = employees.filter((employee) =>
+    employee.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     employee.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -144,6 +175,13 @@ export default function EmployeesPage() {
           Thêm Nhân Viên
         </Button>
       </Stack>
+
+      {/* Error Message */}
+      {error && (
+        <Box mb={3} sx={{ p: 2, bgcolor: 'error.light', borderRadius: 1 }}>
+          <Typography color="error.dark">{error}</Typography>
+        </Box>
+      )}
 
       {/* Search Bar */}
       <Box mb={3}>
@@ -175,11 +213,12 @@ export default function EmployeesPage() {
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
-              <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Mã NV</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Họ Tên</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Chức Vụ</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Phòng Ban</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Ngày Sinh</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Giới Tính</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Vai Trò</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Trạng Thái</TableCell>
               <TableCell sx={{ fontWeight: 600 }} align="right">
                 Thao Tác
@@ -192,17 +231,26 @@ export default function EmployeesPage() {
                 key={employee.id}
                 sx={{ '&:hover': { backgroundColor: '#F9F9F9' } }}
               >
-                <TableCell>{employee.id}</TableCell>
-                <TableCell>{employee.name}</TableCell>
+                <TableCell>{employee.employeeId}</TableCell>
+                <TableCell>{employee.fullName}</TableCell>
                 <TableCell>{employee.email}</TableCell>
-                <TableCell>{employee.position}</TableCell>
-                <TableCell>{employee.department}</TableCell>
+                <TableCell>{employee.dateOfBirth}</TableCell>
                 <TableCell>
-                  <Chip
-                    label={employee.status === 'active' ? 'Hoạt động' : 'Ngừng hoạt động'}
-                    color={employee.status === 'active' ? 'success' : 'default'}
-                    size="small"
-                  />
+                  {employee.gender === 'MALE' ? 'Nam' : employee.gender === 'FEMALE' ? 'Nữ' : 'Khác'}
+                </TableCell>
+                <TableCell>{employee.role == "MANAGER" ? "Quản Lý" :  employee.role == "FLORIST" ? "Thợ Hoa" : "Nhân Viên" }</TableCell>
+                <TableCell>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Switch
+                      checked={employee.active}
+                      onChange={() => handleToggleStatus(employee.id, employee.active)}
+                      color="success"
+                      size="small"
+                    />
+                    <Typography variant="body2" color="text.secondary">
+                      {employee.active ? 'Hoạt động' : 'Ngừng hoạt động'}
+                    </Typography>
+                  </Stack>
                 </TableCell>
                 <TableCell align="right">
                   <IconButton
@@ -224,6 +272,19 @@ export default function EmployeesPage() {
             ))}
           </TableBody>
         </Table>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={totalElements}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          labelRowsPerPage="Số hàng mỗi trang:"
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}-${to} trên tổng ${count !== -1 ? count : `nhiều hơn ${to}`}`
+          }
+        />
       </TableContainer>
 
       {filteredEmployees.length === 0 && (

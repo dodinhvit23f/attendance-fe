@@ -3,3 +3,5 @@ export type { FacilityData } from './FacilityDialog';
 
 export { EmployeeDialog } from './EmployeeDialog';
 export type { EmployeeData, Facility } from './EmployeeDialog';
+
+export { MapPicker } from './MapPicker';

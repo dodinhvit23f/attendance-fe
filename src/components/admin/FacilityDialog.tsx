@@ -16,10 +16,16 @@ import {
   Box,
   Typography,
   IconButton,
+  InputAdornment,
+  CircularProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import SearchIcon from '@mui/icons-material/Search';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
+import { MapPicker } from './MapPicker';
+import {useNotify} from "@/components/notification/NotificationProvider";
 
 interface FacilityDialogProps {
   open: boolean;
@@ -54,6 +60,11 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [distance, setDistance] = useState<number | null>(null);
+  const {notifySuccess, notifyError} = useNotify();
 
   // Update form data when facility prop changes (for edit mode)
   useEffect(() => {
@@ -136,12 +147,164 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
     onClose();
   };
 
-  // Generate Google Maps embed URL
-  const getMapEmbedUrl = () => {
-    const lat = Number(formData.latitude) || 21.0285;
-    const lng = Number(formData.longitude) || 105.8542;
-    return `https://maps.google.com/maps?q=${lat},${lng}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+
+  const handleFindLocation = async () => {
+    if (!formData.address.trim()) {
+      setErrors((prev) => ({
+        ...prev,
+        address: 'Vui lòng nhập địa chỉ trước khi tìm kiếm',
+      }));
+      return;
+    }
+
+    setIsGeocoding(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          formData.address
+        )}&limit=1`
+      );
+
+      if (!response.ok) {
+        throw new Error('Geocoding request failed');
+      }
+
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const location = data[0];
+        setFormData((prev) => ({
+          ...prev,
+          latitude: parseFloat(location.lat),
+          longitude: parseFloat(location.lon),
+        }));
+        // Clear any previous errors
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.latitude;
+          delete newErrors.longitude;
+          delete newErrors.address;
+          return newErrors;
+        });
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          address: 'Không tìm thấy vị trí cho địa chỉ này. Vui lòng thử lại với địa chỉ khác.',
+        }));
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      setErrors((prev) => ({
+        ...prev,
+        address: 'Lỗi khi tìm kiếm vị trí. Vui lòng thử lại sau.',
+      }));
+    } finally {
+      setIsGeocoding(false);
+    }
   };
+
+  // Handle location change from map click/drag
+  const handleMapLocationChange = (lat: number, lng: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+    }));
+  };
+
+  // Calculate distance between two points using Haversine formula (in kilometers)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // Distance in kilometers
+    return distance;
+  };
+
+  // Get user's current GPS location
+  const handleGetMyLocation = () => {
+    if (!navigator.geolocation) {
+      notifyError('Geolocation không được hỗ trợ trên trình duyệt này.');
+      return;
+    }
+
+    setIsGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+
+        // Calculate distance to facility
+        const facilityLat = Number(formData.latitude);
+        const facilityLng = Number(formData.longitude);
+        if (facilityLat && facilityLng) {
+          const dist = calculateDistance(latitude, longitude, facilityLat, facilityLng);
+          setDistance(dist);
+        }
+
+        setIsGettingLocation(false);
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+        let errorMessage = 'Không thể lấy vị trí của bạn.';
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Bạn đã từ chối quyền truy cập vị trí. Vui lòng cho phép trong cài đặt trình duyệt.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Thông tin vị trí không khả dụng.';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Yêu cầu lấy vị trí đã hết thời gian chờ.';
+            break;
+        }
+
+        notifyError(errorMessage);
+        setIsGettingLocation(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  };
+
+  // Recalculate distance when facility location changes
+  useEffect(() => {
+    if (userLocation && formData.latitude && formData.longitude) {
+      const dist = calculateDistance(
+        userLocation.lat,
+        userLocation.lng,
+        Number(formData.latitude),
+        Number(formData.longitude)
+      );
+      setDistance(dist);
+    }
+  }, [formData.latitude, formData.longitude, userLocation]);
+
+  // Auto-request user location when dialog opens
+  // Note: Safari requires user gesture, so auto-request only works on Chrome/Firefox/Edge
+  useEffect(() => {
+    if (!open || userLocation) return;
+
+    // Detect Safari (Safari blocks auto geolocation without user gesture)
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+    if (!isSafari) {
+      // Auto-request for Chrome, Firefox, Edge, Brave, etc.
+      handleGetMyLocation();
+    }
+    // Safari users will see a button to click
+  }, [open]);
 
   return (
     <Dialog
@@ -186,7 +349,7 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
             }}
           />
 
-          {/* Address */}
+          {/* Address with Geocoding Button */}
           <TextField
             label="Địa Chỉ *"
             fullWidth
@@ -195,11 +358,30 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
             value={formData.address}
             onChange={(e) => handleChange('address', e.target.value)}
             error={!!errors.address}
-            helperText={errors.address}
+            helperText={
+              errors.address ||
+              'Nhập địa chỉ và nhấn 🔍 để tự động tìm tọa độ, hoặc nhấp vào bản đồ bên dưới'
+            }
             placeholder="VD: 123 Đường Láng, Đống Đa, Hà Nội"
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: '8px',
+              },
+            }}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={handleFindLocation}
+                      disabled={isGeocoding || !formData.address.trim()}
+                      color="primary"
+                      title="Tìm kiếm vị trí từ địa chỉ"
+                    >
+                      {isGeocoding ? <CircularProgress size={20} /> : <SearchIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
               },
             }}
           />
@@ -253,36 +435,92 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
             />
           </Stack>
 
-          {/* Google Maps Embed */}
+          {/* Auto GPS Location and Distance Display */}
+          <Box sx={{
+            p: 2,
+            bgcolor: 'primary.50',
+            borderRadius: '8px',
+            border: '1px solid',
+            borderColor: 'primary.200'
+          }}>
+            <Stack spacing={2}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                  📍 Vị Trí Của Bạn {isGettingLocation && '(Đang tải...)'}
+                </Typography>
+                <Button
+                  variant={userLocation ? "outlined" : "contained"}
+                  size="small"
+                  startIcon={isGettingLocation ? <CircularProgress size={16} color="inherit" /> : <MyLocationIcon />}
+                  onClick={handleGetMyLocation}
+                  disabled={isGettingLocation}
+                  sx={{
+                    borderRadius: '8px',
+                    textTransform: 'none'
+                  }}
+                >
+                  {isGettingLocation ? 'Đang lấy...' : userLocation ? 'Làm mới' : 'Lấy Vị Trí Của Tôi'}
+                </Button>
+              </Stack>
+
+              {isGettingLocation && !userLocation && (
+                <Typography variant="body2" color="text.secondary">
+                  💡 Vui lòng cho phép truy cập vị trí khi trình duyệt hỏi
+                </Typography>
+              )}
+
+              {userLocation && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Tọa độ của bạn: {userLocation.lat.toFixed(6)}, {userLocation.lng.toFixed(6)}
+                  </Typography>
+
+                  {distance !== null && (
+                    <Box sx={{ mt: 1, p: 1.5, bgcolor: 'success.50', borderRadius: '4px' }}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Typography variant="h6" sx={{ color: 'success.dark', fontWeight: 700 }}>
+                          📏 Khoảng cách: {distance < 1
+                            ? `${(distance * 1000).toFixed(0)} m`
+                            : `${distance.toFixed(2)} km`}
+                        </Typography>
+                      </Stack>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                        Khoảng cách từ vị trí của bạn đến cơ sở này
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              )}
+            </Stack>
+          </Box>
+
+          {/* Interactive Map with Click-to-Pin */}
           <Box>
             <Stack direction="row" alignItems="center" spacing={1} mb={1}>
               <LocationOnIcon color="primary" />
               <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                Xem Trước Vị Trí Trên Bản Đồ
+                Chọn Vị Trí Trên Bản Đồ (Nhấp hoặc Kéo Pin)
               </Typography>
             </Stack>
-            <Box
-              sx={{
-                width: '100%',
-                height: 300,
-                borderRadius: '8px',
-                overflow: 'hidden',
-                border: '2px solid #E0E0E0',
-              }}
-            >
-              <iframe
-                width="100%"
-                height="100%"
-                frameBorder="0"
-                style={{ border: 0 }}
-                src={getMapEmbedUrl()}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </Box>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              Bản đồ sẽ cập nhật tự động khi bạn thay đổi kinh độ và vĩ độ
+            <MapPicker
+              latitude={Number(formData.latitude) || 21.0285}
+              longitude={Number(formData.longitude) || 105.8542}
+              onLocationChange={handleMapLocationChange}
+              address={formData.address}
+              userLocation={userLocation}
+            />
+            <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                🔴 Pin đỏ: Vị trí cơ sở
+              </Typography>
+              {userLocation && (
+                <Typography variant="caption" color="primary">
+                  🔵 Pin xanh: Vị trí của bạn
+                </Typography>
+              )}
+            </Stack>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              💡 Mẹo: Nhấp vào bản đồ để đặt pin đỏ, hoặc kéo pin đến vị trí mong muốn.
             </Typography>
           </Box>
         </Stack>
