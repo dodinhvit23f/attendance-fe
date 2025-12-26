@@ -26,6 +26,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import { MapPicker } from './MapPicker';
 import {useNotify} from "@/components/notification/NotificationProvider";
+import { createFacility, updateFacility } from '@/lib/api/admin';
 
 interface FacilityDialogProps {
   open: boolean;
@@ -62,6 +63,7 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
@@ -113,6 +115,7 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
 
     const lat = Number(formData.latitude);
     const lng = Number(formData.longitude);
+    const allowedRadius = Number(formData.allowedRadius);
 
     if (isNaN(lat) || lat < -90 || lat > 90) {
       newErrors.latitude = 'Vĩ độ phải từ -90 đến 90';
@@ -122,18 +125,47 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
       newErrors.longitude = 'Kinh độ phải từ -180 đến 180';
     }
 
+    if (isNaN(allowedRadius) || allowedRadius < 0 || allowedRadius > 150) {
+      newErrors.allowedRadius = 'Khoảng cách chấm công hợp lý trong khoảng 10 - 150 mét';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
-    if (validateForm()) {
+  const handleSave = async () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    try {
+      const facilityData = {
+        name: formData.name,
+        address: formData.address,
+        latitude: Number(formData.latitude),
+        longitude: Number(formData.longitude),
+        allowDistance: formData.allowedRadius || 100,
+      };
+
+      if (facility?.id) {
+        // Update existing facility
+        await updateFacility(facility.id, facilityData);
+        notifySuccess('Cập nhật cơ sở thành công!');
+      } else {
+        // Create new facility
+        await createFacility(facilityData);
+        notifySuccess('Tạo cơ sở thành công!');
+      }
+
       onSave({
         ...formData,
         latitude: Number(formData.latitude),
         longitude: Number(formData.longitude),
       });
       handleClose();
+    } catch (error: any) {
+      notifyError(error.message || 'Có lỗi xảy ra khi lưu cơ sở');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -562,14 +594,15 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
         <Button
           onClick={handleSave}
           variant="contained"
-          startIcon={<SaveIcon />}
+          disabled={isSubmitting}
+          startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
           sx={{
             borderRadius: '8px',
             textTransform: 'none',
             px: 3,
           }}
         >
-          {facility ? 'Cập Nhật' : 'Lưu'}
+          {isSubmitting ? 'Đang lưu...' : (facility ? 'Cập Nhật' : 'Lưu')}
         </Button>
       </DialogActions>
     </Dialog>

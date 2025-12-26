@@ -57,9 +57,6 @@ export const getEmployees = async (
         'Content-Type': 'application/json',
         Authorization: accessToken,
         Referer: window.location.origin,
-        'sec-ch-ua-platform': '"Linux"',
-        'sec-ch-ua': '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
-        'sec-ch-ua-mobile': '?0',
       },
     }
   );

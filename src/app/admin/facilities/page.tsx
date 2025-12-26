@@ -13,96 +13,91 @@ import {
   TableRow,
   Button,
   Stack,
-  Chip,
+  Switch,
   IconButton,
   TextField,
   InputAdornment,
   Pagination,
+  FormControlLabel,
+  CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { FacilityDialog, FacilityData } from '@/components/admin';
 import { useLoading } from '@/components/root/client-layout';
-
-// Mock data
-const mockFacilities = [
-  {
-    id: 1,
-    name: 'Văn phòng Hà Nội',
-    address: '123 Đường Láng, Đống Đa, Hà Nội',
-    capacity: 150,
-    currentOccupancy: 120,
-    status: 'active',
-  },
-  {
-    id: 2,
-    name: 'Chi nhánh Hồ Chí Minh',
-    address: '456 Nguyễn Huệ, Quận 1, TP.HCM',
-    capacity: 200,
-    currentOccupancy: 180,
-    status: 'active',
-  },
-  {
-    id: 3,
-    name: 'Văn phòng Đà Nẵng',
-    address: '789 Trần Phú, Hải Châu, Đà Nẵng',
-    capacity: 80,
-    currentOccupancy: 65,
-    status: 'active',
-  },
-  {
-    id: 4,
-    name: 'Chi nhánh Cần Thơ',
-    address: '321 Mậu Thân, Ninh Kiều, Cần Thơ',
-    capacity: 50,
-    currentOccupancy: 0,
-    status: 'inactive',
-  },
-];
+import { getFacilities, Facility, toggleFacilityStatus } from '@/lib/api/admin';
+import { useNotify } from '@/components/notification/NotificationProvider';
 
 export default function FacilitiesPage() {
   const { setLoading } = useLoading();
+  const { notifyError, notifySuccess } = useNotify();
+  const [facilities, setFacilities] = React.useState<Facility[]>([]);
+  const [isLoadingData, setIsLoadingData] = React.useState(true);
+  const [togglingId, setTogglingId] = React.useState<number | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [selectedFacility, setSelectedFacility] = React.useState<FacilityData | null>(null);
   const [page, setPage] = React.useState(1);
   const pageSize = 10;
 
+  const fetchFacilities = React.useCallback(async () => {
+    try {
+      setIsLoadingData(true);
+      const response = await getFacilities({ page: 0, size: 100 });
+      setFacilities(response.data || []);
+    } catch (error: any) {
+      notifyError(error.message || 'Không thể tải danh sách cơ sở');
+      setFacilities([]);
+    } finally {
+      setIsLoadingData(false);
+      setLoading(false);
+    }
+  }, [notifyError, setLoading]);
+
   React.useEffect(() => {
-    setLoading(false);
-  }, []);
+    fetchFacilities();
+  }, [fetchFacilities]);
 
   const handleAddFacility = () => {
     setSelectedFacility(null);
     setDialogOpen(true);
   };
 
-  const handleEditFacility = (id: number) => {
-    const facility = mockFacilities.find((f) => f.id === id);
-    if (facility) {
-      setSelectedFacility({
-        ...facility,
-        latitude: 21.0285, // Mock coordinates - replace with actual data
-        longitude: 105.8542,
-        status: facility.status as 'active' | 'inactive',
-      });
-      setDialogOpen(true);
+  const handleEditFacility = (facility: Facility) => {
+    setSelectedFacility({
+      id: facility.id,
+      name: facility.name,
+      address: facility.address,
+      latitude: facility.latitude,
+      longitude: facility.longitude,
+      allowedRadius: facility.allowDistance,
+      status: facility.active ? 'active' : 'inactive',
+    });
+    setDialogOpen(true);
+  };
+
+  const handleToggleStatus = async (id: number, currentActive: boolean) => {
+    const newStatus = !currentActive;
+    setTogglingId(id);
+    try {
+      await toggleFacilityStatus(id, newStatus);
+      // Update local state
+      setFacilities((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, active: newStatus } : f))
+      );
+      notifySuccess('Cập nhật trạng thái thành công!');
+    } catch (error: any) {
+      notifyError(error.message || 'Có lỗi xảy ra khi cập nhật trạng thái');
+    } finally {
+      setTogglingId(null);
     }
   };
 
-  const handleDeleteFacility = (id: number) => {
-    console.log('Delete facility:', id);
-    // TODO: Show confirmation dialog and delete
-  };
-
-  const handleSaveFacility = (facilityData: FacilityData) => {
-    console.log('Save facility:', facilityData);
-    // TODO: Add API call to save facility
-    // If editing: PUT /api/facilities/:id
-    // If creating: POST /api/facilities
+  const handleSaveFacility = () => {
+    // Refresh the list after saving
+    fetchFacilities();
   };
 
   const handleCloseDialog = () => {
@@ -110,7 +105,7 @@ export default function FacilitiesPage() {
     setSelectedFacility(null);
   };
 
-  const filteredFacilities = mockFacilities.filter((facility) =>
+  const filteredFacilities = facilities.filter((facility) =>
     facility.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     facility.address.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -129,13 +124,6 @@ export default function FacilitiesPage() {
   React.useEffect(() => {
     setPage(1);
   }, [searchQuery]);
-
-  const getOccupancyColor = (current: number, capacity: number) => {
-    const percentage = (current / capacity) * 100;
-    if (percentage >= 90) return 'error';
-    if (percentage >= 70) return 'warning';
-    return 'success';
-  };
 
   return (
     <Box sx={{ width: '100%', p: 3 }}>
@@ -188,80 +176,118 @@ export default function FacilitiesPage() {
         />
       </Box>
 
-      {/* Facilities Table */}
-      <TableContainer component={Paper} elevation={2}>
-        <Table>
-          <TableHead>
-            <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
-              <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Tên Cơ Sở</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Địa Chỉ</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Trạng Thái</TableCell>
-              <TableCell sx={{ fontWeight: 600 }} align="right">
-                Thao Tác
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {paginatedFacilities.map((facility) => {
-              const occupancyPercentage = facility.capacity > 0
-                ? Math.round((facility.currentOccupancy / facility.capacity) * 100)
-                : 0;
+      {/* Loading State */}
+      {isLoadingData && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      )}
 
-              return (
-                <TableRow
-                  key={facility.id}
-                  sx={{ '&:hover': { backgroundColor: '#F9F9F9' } }}
-                >
-                  <TableCell>{facility.id}</TableCell>
-                  <TableCell>
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <LocationOnIcon fontSize="small" color="action" />
-                      <Typography>{facility.name}</Typography>
+      {/* Facilities Table */}
+      {!isLoadingData && (
+        <TableContainer component={Paper} elevation={2}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
+                <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Tên Cơ Sở</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Địa Chỉ</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Phạm Vi (m)</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Trạng Thái</TableCell>
+                <TableCell sx={{ fontWeight: 600 }} align="right">
+                  Thao Tác
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paginatedFacilities.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
+                    <Stack spacing={2} alignItems="center">
+                      <LocationOnIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
+                      <Typography variant="h6" color="text.secondary">
+                        Chưa có cơ sở nào
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Bấm nút "Thêm Cơ Sở" để tạo cơ sở đầu tiên
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={handleAddFacility}
+                        sx={{
+                          borderRadius: '8px',
+                          textTransform: 'none',
+                          mt: 1,
+                        }}
+                      >
+                        Thêm Cơ Sở
+                      </Button>
                     </Stack>
                   </TableCell>
-                  <TableCell sx={{ maxWidth: 300 }}>
-                    {facility.address}
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={facility.status === 'active' ? 'Hoạt động' : 'Ngừng hoạt động'}
-                      color={facility.status === 'active' ? 'success' : 'default'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={() => handleEditFacility(facility.id)}
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => handleDeleteFacility(facility.id)}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              ) : (
+                paginatedFacilities.map((facility) => (
+                  <TableRow
+                    key={facility.id}
+                    sx={{ '&:hover': { backgroundColor: '#F9F9F9' } }}
+                  >
+                    <TableCell>{facility.id}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <LocationOnIcon fontSize="small" color="action" />
+                        <Typography>{facility.name}</Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell sx={{ maxWidth: 300 }}>
+                      {facility.address}
+                    </TableCell>
+                    <TableCell>
+                      {facility.allowDistance}
+                    </TableCell>
+                    <TableCell>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={facility.active}
+                            onChange={() => handleToggleStatus(facility.id, facility.active)}
+                            color="success"
+                            size="small"
+                            disabled={togglingId === facility.id}
+                          />
+                        }
+                        label={togglingId === facility.id ? 'Đang cập nhật...' : (facility.active ? 'Hoạt động' : 'Ngừng')}
+                        sx={{
+                          '& .MuiFormControlLabel-label': {
+                            fontSize: '0.875rem',
+                            color: togglingId === facility.id ? 'text.disabled' : (facility.active ? 'success.main' : 'text.secondary'),
+                          },
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => handleEditFacility(facility)}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
 
       {/* Pagination */}
-      {filteredFacilities.length > 0 && totalPages > 1 && (
+      {!isLoadingData && filteredFacilities.length > 0 && totalPages > 1 && (
         <Stack spacing={2} alignItems="center" mt={3}>
-          {/* Pagination Info Text */}
           <Typography variant="body2" color="text.secondary">
             Hiển thị {startIndex + 1}-{Math.min(endIndex, filteredFacilities.length)} của {filteredFacilities.length} cơ sở
           </Typography>
-
-          {/* Pagination Controls */}
           <Pagination
             count={totalPages}
             page={page}
@@ -277,14 +303,6 @@ export default function FacilitiesPage() {
             }}
           />
         </Stack>
-      )}
-
-      {filteredFacilities.length === 0 && (
-        <Box sx={{ textAlign: 'center', py: 4 }}>
-          <Typography color="text.secondary">
-            Không tìm thấy cơ sở nào
-          </Typography>
-        </Box>
       )}
 
       {/* Facility Dialog */}
