@@ -42,6 +42,7 @@ export interface FacilityData {
   latitude: number | string;
   longitude: number | string;
   capacity?: number;
+  allowedRadius?: number; // Allowed attendance range in meters
 }
 
 export const FacilityDialog: React.FC<FacilityDialogProps> = ({
@@ -57,6 +58,7 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
     latitude: 21.0285,
     longitude: 105.8542,
     capacity: 0,
+    allowedRadius: 100,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -78,6 +80,7 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
         latitude: 21.0285,
         longitude: 105.8542,
         capacity: 0,
+        allowedRadius: 100,
       });
     }
   }, [facility, open]);
@@ -142,6 +145,7 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
       latitude: 21.0285,
       longitude: 105.8542,
       capacity: 0,
+      allowedRadius: 100,
     });
     setErrors({});
     onClose();
@@ -399,6 +403,23 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
               <MenuItem value="inactive">Ngừng hoạt động</MenuItem>
             </Select>
           </FormControl>
+
+          {/* Allowed Attendance Radius */}
+          <TextField
+            label="Phạm Vi Điểm Danh (mét)"
+            type="number"
+            fullWidth
+            value={formData.allowedRadius}
+            onChange={(e) => handleChange('allowedRadius', Number(e.target.value))}
+            error={!!errors.allowedRadius}
+            helperText={errors.allowedRadius || 'Khoảng cách tối đa cho phép nhân viên điểm danh (mét)'}
+            inputProps={{ min: 0, step: 10 }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+              },
+            }}
+          />
 
           {/* Coordinates */}
           <Stack direction="row" spacing={2}>
