@@ -167,6 +167,7 @@ export const getFacilities = async (
   const queryParams = new URLSearchParams({
     page: params.page.toString(),
     size: params.size.toString(),
+    sort: "id"
   });
 
   const response = await fetch(
