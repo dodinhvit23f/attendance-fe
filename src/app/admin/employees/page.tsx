@@ -26,7 +26,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import { EmployeeDialog, EmployeeData, Facility } from '@/components/admin';
 import { useEffect } from 'react';
 import { useLoading } from '@/components/root/client-layout';
-import { getEmployees, Employee } from '@/lib/api/admin';
+import { getEmployees, Employee, updateEmployeeStatus } from '@/lib/api/admin/employees';
+import { getRoles, type Role } from '@/lib/api/admin/roles';
+import { useNotify } from '@/components/notification/NotificationProvider';
 
 // Mock facilities data
 const mockFacilities: Facility[] = [
@@ -38,14 +40,17 @@ const mockFacilities: Facility[] = [
 
 export default function EmployeesPage() {
   const { setLoading } = useLoading();
+  const { notifySuccess, notifyError } = useNotify();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [selectedEmployee, setSelectedEmployee] = React.useState<EmployeeData | null>(null);
   const [employees, setEmployees] = React.useState<Employee[]>([]);
+  const [roles, setRoles] = React.useState<Role[]>([]);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [totalElements, setTotalElements] = React.useState(0);
   const [error, setError] = React.useState<string | null>(null);
+  const [togglingId, setTogglingId] = React.useState<number | null>(null);
 
   const fetchEmployees = async () => {
     try {
@@ -68,7 +73,9 @@ export default function EmployeesPage() {
 
   useEffect(() => {
     fetchEmployees();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, rowsPerPage]);
+
 
   const handleAddEmployee = () => {
     setSelectedEmployee(null);
@@ -78,6 +85,10 @@ export default function EmployeesPage() {
   const handleEditEmployee = (id: number) => {
     const employee = employees.find((e) => e.id === id);
     if (employee) {
+      // Find the role ID from the role name
+      const roleData = roles.find((r) => r.name === employee.role);
+      const roleId = roleData ? roleData.id : 0;
+
       // Map API data to EmployeeData format
       setSelectedEmployee({
         id: employee.id,
@@ -85,9 +96,10 @@ export default function EmployeesPage() {
         phoneNumber: '0123456789', // TODO: Add phone number to API response
         email: employee.email,
         address: '123 Đường Láng, Đống Đa, Hà Nội', // TODO: Add address to API response
+        dateOfBirth: employee.dateOfBirth,
         gender: employee.gender.toLowerCase() as 'male' | 'female' | 'other',
         accountName: employee.employeeId,
-        role: 'employee', // TODO: Add role to API response
+        role: roleId,
         defaultPassword: '',
         facilityIds: [1, 2], // TODO: Add facility IDs to API response
       });
@@ -102,32 +114,36 @@ export default function EmployeesPage() {
 
   const handleSaveEmployee = (employeeData: EmployeeData) => {
     console.log('Save employee:', employeeData);
-    // TODO: Add API call to save employee
-    // If editing: PUT /api/employees/:id
-    // If creating: POST /api/employees
+    // Reload employee list after save
+    fetchEmployees();
   };
 
   const handleToggleStatus = async (id: number, currentStatus: boolean) => {
-    try {
-      // TODO: Add API call to update employee status
-      // Example: await updateEmployeeStatus(id, !currentStatus);
+    const employee = employees.find((e) => e.id === id);
+    if (!employee) return;
 
-      // Optimistically update UI
+    const newStatus = !currentStatus;
+    setTogglingId(id);
+
+    try {
+      // Call API to update employee status
+      await updateEmployeeStatus(id, newStatus, employee.version);
+
+      // Update local state
       setEmployees((prevEmployees) =>
         prevEmployees.map((emp) =>
-          emp.id === id ? { ...emp, active: !currentStatus } : emp
+          emp.id === id ? { ...emp, active: newStatus } : emp
         )
       );
 
-      console.log(`Toggle status for employee ${id} to ${!currentStatus}`);
+      notifySuccess('Cập nhật trạng thái thành công!');
     } catch (err) {
       console.error('Error updating employee status:', err);
-      // Revert on error
-      setEmployees((prevEmployees) =>
-        prevEmployees.map((emp) =>
-          emp.id === id ? { ...emp, active: currentStatus } : emp
-        )
-      );
+      notifyError(err instanceof Error ? err.message : 'Có lỗi xảy ra khi cập nhật trạng thái');
+      // Reload to get correct state from server
+      fetchEmployees();
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -246,9 +262,10 @@ export default function EmployeesPage() {
                       onChange={() => handleToggleStatus(employee.id, employee.active)}
                       color="success"
                       size="small"
+                      disabled={togglingId === employee.id}
                     />
                     <Typography variant="body2" color="text.secondary">
-                      {employee.active ? 'Hoạt động' : 'Ngừng hoạt động'}
+                      {togglingId === employee.id ? 'Đang cập nhật...' : (employee.active ? 'Hoạt động' : 'Ngừng hoạt động')}
                     </Typography>
                   </Stack>
                 </TableCell>
@@ -260,13 +277,13 @@ export default function EmployeesPage() {
                   >
                     <EditIcon fontSize="small" />
                   </IconButton>
-                  <IconButton
+                  {/*<IconButton
                     size="small"
                     color="error"
                     onClick={() => handleDeleteEmployee(employee.id)}
                   >
                     <DeleteIcon fontSize="small" />
-                  </IconButton>
+                  </IconButton>*/}
                 </TableCell>
               </TableRow>
             ))}
@@ -301,7 +318,6 @@ export default function EmployeesPage() {
         onClose={handleCloseDialog}
         onSave={handleSaveEmployee}
         employee={selectedEmployee}
-        facilities={mockFacilities}
       />
     </Box>
   );

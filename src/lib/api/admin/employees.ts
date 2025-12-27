@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from '@/lib/constants/storage';
+import {STORAGE_KEYS} from '@/lib/constants/storage';
 
 // Types
 export interface Employee {
@@ -10,6 +10,7 @@ export interface Employee {
   gender: 'MALE' | 'FEMALE' | 'OTHER';
   role: string;
   active: boolean;
+  version: number;
 }
 
 export interface GetEmployeesParams {
@@ -29,13 +30,41 @@ export interface GetEmployeesResponse {
   };
 }
 
+export interface CreateEmployeeRequest {
+  userName: string;
+  password: string;
+  role: string;
+  facilityIds: number[];
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  address: string;
+  dateOfBirth: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+}
+
+export interface CreateEmployeeResponse {
+  traceId: string;
+  data: Employee;
+}
+
+export interface UpdateEmployeeStatusRequest {
+  active: string;
+  version: number;
+}
+
+export interface UpdateEmployeeStatusResponse {
+  traceId: string;
+  data: boolean;
+}
+
 /**
  * Fetch paginated list of employees from admin API
  * @param params - Pagination and filtering parameters
  * @returns Promise with employee list and pagination metadata
  */
 export const getEmployees = async (
-  params: GetEmployeesParams
+    params: GetEmployeesParams
 ): Promise<GetEmployeesResponse> => {
   const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
 
@@ -50,15 +79,15 @@ export const getEmployees = async (
   });
 
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_ADMIN_EMPLOYEES}?${queryParams}`,
-    {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: accessToken,
-        Referer: window.location.origin,
-      },
-    }
+      `${process.env.NEXT_PUBLIC_API_ADMIN_EMPLOYEES}?${queryParams}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: accessToken,
+          Referer: window.location.origin,
+        },
+      }
   );
 
   if (!response.ok) {
@@ -69,6 +98,96 @@ export const getEmployees = async (
     }
     const error = await response.json();
     throw new Error(error.errorCodes?.[0] || 'Failed to fetch employees');
+  }
+
+  return response.json();
+};
+
+/**
+ * Create a new employee
+ * @param employeeData - Employee data to create
+ * @returns Promise with created employee data
+ */
+export const createEmployee = async (
+    employeeData: CreateEmployeeRequest
+): Promise<CreateEmployeeResponse> => {
+  const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+
+  if (!accessToken) {
+    throw new Error('Access token not found. Please login first.');
+  }
+
+  const response = await fetch(
+      process.env.NEXT_PUBLIC_API_ADMIN_EMPLOYEES!,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(employeeData),
+      }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      const unauthorizedError = new Error('Unauthorized. Please login again.');
+      (unauthorizedError as any).status = 401;
+      throw unauthorizedError;
+    }
+    const error = await response.json();
+    throw new Error(error.errorCodes?.[0] || 'Failed to create employee');
+  }
+
+  return response.json();
+};
+
+/**
+ * Update employee status
+ * @param id - Employee ID
+ * @param active - New active status as string
+ * @param version - Employee version for optimistic locking
+ * @returns Promise with response
+ */
+export const updateEmployeeStatus = async (
+    id: number,
+    active: boolean,
+    version: number
+): Promise<UpdateEmployeeStatusResponse> => {
+  const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+
+  if (!accessToken) {
+    throw new Error('Access token not found. Please login first.');
+  }
+
+  let v = 0
+  if (version) {
+    v = version
+  }
+
+  const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_ADMIN_EMPLOYEES}/${id}/status`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          active: String(active),
+          version: v,
+        }),
+      }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      const unauthorizedError = new Error('Unauthorized. Please login again.');
+      (unauthorizedError as any).status = 401;
+      throw unauthorizedError;
+    }
+    const error = await response.json();
+    throw new Error(error.errorCodes?.[0] || 'Failed to update employee status');
   }
 
   return response.json();

@@ -5,6 +5,7 @@ require('events').EventEmitter.defaultMaxListeners = 20;
 
 const nextConfig: NextConfig = {
   /* config options here */
+  productionBrowserSourceMaps: false,
 };
 
 export default nextConfig;

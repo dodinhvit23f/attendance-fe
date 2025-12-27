@@ -24,8 +24,11 @@ import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { useEffect } from 'react';
 import { useLoading } from '@/components/root/client-layout';
+import { CameraCapture } from '@/components/admin/CameraCapture';
+import { useNotify } from '@/components/notification/NotificationProvider';
 
 // Mock data
 const mockAttendances = [
@@ -117,12 +120,29 @@ const getStatusIcon = (status: string) => {
 
 export default function AttendancesPage() {
   const { setLoading } = useLoading();
+  const { notifySuccess } = useNotify();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState('all');
+  const [cameraOpen, setCameraOpen] = React.useState(false);
 
   useEffect(() => {
     setLoading(false);
   }, []);
+
+  const handleOpenCamera = () => {
+    setCameraOpen(true);
+  };
+
+  const handleCloseCamera = () => {
+    setCameraOpen(false);
+  };
+
+  const handleCapturePhoto = (imageData: string) => {
+    // Handle the captured image (e.g., save to database, display, etc.)
+    console.log('Captured image:', imageData.substring(0, 50) + '...');
+    notifySuccess('Chụp ảnh thành công! Đang xử lý điểm danh...');
+    // TODO: Send imageData to backend for attendance verification
+  };
 
   const filteredAttendances = mockAttendances.filter((attendance) => {
     const matchesSearch = attendance.employeeName
@@ -136,9 +156,28 @@ export default function AttendancesPage() {
   return (
     <Box sx={{ width: '100%', p: 3 }}>
       {/* Header */}
-      <Typography variant="h4" component="h1" sx={{ fontWeight: 600, mb: 3 }}>
-        Quản Lý Chấm Công
-      </Typography>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+          Quản Lý Chấm Công
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<CameraAltIcon />}
+          onClick={handleOpenCamera}
+          sx={{
+            borderRadius: '8px',
+            textTransform: 'none',
+            px: 3,
+          }}
+        >
+          Chụp Ảnh Điểm Danh
+        </Button>
+      </Stack>
 
       {/* Filters */}
       <Stack direction="row" spacing={2} mb={3}>
@@ -305,6 +344,13 @@ export default function AttendancesPage() {
           </Typography>
         </Box>
       )}
+
+      {/* Camera Capture Dialog */}
+      <CameraCapture
+        open={cameraOpen}
+        onClose={handleCloseCamera}
+        onCapture={handleCapturePhoto}
+      />
     </Box>
   );
 }

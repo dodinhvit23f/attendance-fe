@@ -423,7 +423,7 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
           />
 
           {/* Status */}
-          <FormControl fullWidth>
+          {/*<FormControl fullWidth>
             <InputLabel>Trạng Thái</InputLabel>
             <Select
               value={formData.status}
@@ -434,7 +434,7 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
               <MenuItem value="active">Hoạt động</MenuItem>
               <MenuItem value="inactive">Ngừng hoạt động</MenuItem>
             </Select>
-          </FormControl>
+          </FormControl>*/}
 
           {/* Allowed Attendance Radius */}
           <TextField

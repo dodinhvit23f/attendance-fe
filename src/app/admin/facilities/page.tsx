@@ -54,11 +54,14 @@ export default function FacilitiesPage() {
       setIsLoadingData(false);
       setLoading(false);
     }
-  }, [notifyError, setLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  // Fetch facilities only on initial mount
   React.useEffect(() => {
     fetchFacilities();
-  }, [fetchFacilities]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAddFacility = () => {
     setSelectedFacility(null);
@@ -95,9 +98,28 @@ export default function FacilitiesPage() {
     }
   };
 
-  const handleSaveFacility = () => {
-    // Refresh the list after saving
-    fetchFacilities();
+  const handleSaveFacility = (facilityData: FacilityData) => {
+    // Update local state instead of refetching all data
+    if (facilityData.id) {
+      // Update existing facility in local state
+      setFacilities((prev) =>
+        prev.map((f) =>
+          f.id === facilityData.id
+            ? {
+                ...f,
+                name: facilityData.name,
+                address: facilityData.address,
+                latitude: Number(facilityData.latitude),
+                longitude: Number(facilityData.longitude),
+                allowDistance: facilityData.allowedRadius || 100,
+              }
+            : f
+        )
+      );
+    } else {
+      // For new facility, refetch to get the server-generated ID
+      fetchFacilities();
+    }
   };
 
   const handleCloseDialog = () => {

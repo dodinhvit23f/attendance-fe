@@ -11,6 +11,11 @@ export interface Facility {
   active: boolean;
 }
 
+export interface FacilityLight {
+  id: number;
+  name: string;
+}
+
 export interface CreateFacilityRequest {
   name: string;
   address: string;
@@ -59,6 +64,11 @@ export interface GetFacilitiesParams {
 export interface GetFacilitiesResponse {
   traceId: string;
   data: Facility[];
+}
+
+export interface GetFacilitiesLightResponse {
+  traceId: string;
+  data: FacilityLight[];
 }
 
 export interface ToggleFacilityStatusRequest {
@@ -167,7 +177,7 @@ export const getFacilities = async (
   const queryParams = new URLSearchParams({
     page: params.page.toString(),
     size: params.size.toString(),
-    sort: "id"
+    sort: "id,asc"
   });
 
   const response = await fetch(
@@ -234,6 +244,41 @@ export const toggleFacilityStatus = async (
       throw new Error('Không tìm thấy cơ sở');
     }
     throw new Error(errorCode || 'Failed to update facility status');
+  }
+
+  return response.json();
+};
+
+/**
+ * Fetch light list of facilities (id and name only)
+ * @returns Promise with facilities light list
+ */
+export const getFacilitiesLight = async (): Promise<GetFacilitiesLightResponse> => {
+  const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+
+  if (!accessToken) {
+    throw new Error('Access token not found. Please login first.');
+  }
+
+  const response = await fetch(
+    process.env.NEXT_PUBLIC_API_ADMIN_FACILITIES_LIGHT!,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      const unauthorizedError = new Error('Unauthorized. Please login again.');
+      (unauthorizedError as any).status = 401;
+      throw unauthorizedError;
+    }
+    const error = await response.json();
+    throw new Error(error.errorCodes?.[0] || 'Failed to fetch facilities');
   }
 
   return response.json();

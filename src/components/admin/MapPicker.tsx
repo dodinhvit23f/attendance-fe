@@ -81,7 +81,7 @@ export const MapPicker: React.FC<MapPickerProps> = ({
     });
 
     // Handle map click
-    map.on('click', (e) => {
+    map.on('click', (e: { latlng: { lat: any; lng: any; }; }) => {
       const { lat, lng } = e.latlng;
       marker.setLatLng([lat, lng]);
       onLocationChange(lat, lng);

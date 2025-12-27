@@ -3,6 +3,7 @@ import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
 import ClientLayout from "@/components/root/client-layout";
 import EmotionCacheRegistry from "@/components/root/emotion-cache-registry";
+import { DevToolsBlocker } from "@/components/DevToolsBlocker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,6 +30,7 @@ export default function RootLayout({
   return (
       <html lang="vi">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <DevToolsBlocker />
       <EmotionCacheRegistry options={{ key: 'mui' }}>
         <ClientLayout>
           {children}
