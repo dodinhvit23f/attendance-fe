@@ -23,11 +23,12 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
-import { EmployeeDialog, EmployeeData, Facility } from '@/components/admin';
+import { CreateEmployeeDialog, UpdateEmployeeDialog, UpdateEmployeeData, Facility } from '@/components/admin';
 import { useEffect } from 'react';
 import { useLoading } from '@/components/root/client-layout';
 import { getEmployees, Employee, updateEmployeeStatus } from '@/lib/api/admin/employees';
 import { getRoles, type Role } from '@/lib/api/admin/roles';
+import { FacilityLight, getFacilitiesLight } from '@/lib/api/admin/facilities';
 import { useNotify } from '@/components/notification/NotificationProvider';
 
 // Mock facilities data
@@ -42,15 +43,19 @@ export default function EmployeesPage() {
   const { setLoading } = useLoading();
   const { notifySuccess, notifyError } = useNotify();
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [selectedEmployee, setSelectedEmployee] = React.useState<EmployeeData | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
+  const [updateDialogOpen, setUpdateDialogOpen] = React.useState(false);
+  const [selectedEmployee, setSelectedEmployee] = React.useState<UpdateEmployeeData | null>(null);
   const [employees, setEmployees] = React.useState<Employee[]>([]);
   const [roles, setRoles] = React.useState<Role[]>([]);
+  const [facilities, setFacilities] = React.useState<FacilityLight[]>([]);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [totalElements, setTotalElements] = React.useState(0);
   const [error, setError] = React.useState<string | null>(null);
   const [togglingId, setTogglingId] = React.useState<number | null>(null);
+  const [rolesLoaded, setRolesLoaded] = React.useState(false);
+  const [facilitiesLoaded, setFacilitiesLoaded] = React.useState(false);
 
   const fetchEmployees = async () => {
     try {
@@ -71,15 +76,53 @@ export default function EmployeesPage() {
     }
   };
 
+  // Step 1: Fetch roles on component mount
   useEffect(() => {
-    fetchEmployees();
+    const fetchRoles = async () => {
+      try {
+        const response = await getRoles();
+        setRoles(response.data);
+        setRolesLoaded(true);
+      } catch (err) {
+        console.error('Error fetching roles:', err);
+        setRolesLoaded(true); // Set to true even on error to prevent infinite waiting
+      }
+    };
+
+    if (!rolesLoaded) {
+      fetchRoles();
+    }
+  }, [rolesLoaded]);
+
+  // Step 2: Fetch facilities after roles are loaded
+  useEffect(() => {
+    const fetchFacilities = async () => {
+      try {
+        const response = await getFacilitiesLight();
+        setFacilities(response.data);
+        setFacilitiesLoaded(true);
+      } catch (err) {
+        console.error('Error fetching facilities:', err);
+        setFacilitiesLoaded(true); // Set to true even on error to prevent infinite waiting
+      }
+    };
+
+    if (rolesLoaded && !facilitiesLoaded) {
+      fetchFacilities();
+    }
+  }, [rolesLoaded, facilitiesLoaded]);
+
+  // Step 3: Fetch employees after roles and facilities are loaded
+  useEffect(() => {
+    if (rolesLoaded && facilitiesLoaded) {
+      fetchEmployees();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, rolesLoaded, facilitiesLoaded]);
 
 
   const handleAddEmployee = () => {
-    setSelectedEmployee(null);
-    setDialogOpen(true);
+    setCreateDialogOpen(true);
   };
 
   const handleEditEmployee = (id: number) => {
@@ -89,31 +132,24 @@ export default function EmployeesPage() {
       const roleData = roles.find((r) => r.name === employee.role);
       const roleId = roleData ? roleData.id : 0;
 
-      // Map API data to EmployeeData format
+      // Map API data to UpdateEmployeeData format
       setSelectedEmployee({
         id: employee.id,
+        employeeId: employee.employeeId,
         name: employee.fullName,
-        phoneNumber: '0123456789', // TODO: Add phone number to API response
+        phoneNumber: employee.phoneNumber,
         email: employee.email,
-        address: '123 Đường Láng, Đống Đa, Hà Nội', // TODO: Add address to API response
+        address: employee.address,
         dateOfBirth: employee.dateOfBirth,
         gender: employee.gender.toLowerCase() as 'male' | 'female' | 'other',
-        accountName: employee.employeeId,
         role: roleId,
-        defaultPassword: '',
-        facilityIds: [1, 2], // TODO: Add facility IDs to API response
+        facilityIds: [],
       });
-      setDialogOpen(true);
+      setUpdateDialogOpen(true);
     }
   };
 
-  const handleDeleteEmployee = (id: number) => {
-    console.log('Delete employee:', id);
-    // TODO: Show confirmation dialog and delete
-  };
-
-  const handleSaveEmployee = (employeeData: EmployeeData) => {
-    console.log('Save employee:', employeeData);
+  const handleSaveEmployee = () => {
     // Reload employee list after save
     fetchEmployees();
   };
@@ -147,8 +183,12 @@ export default function EmployeesPage() {
     }
   };
 
-  const handleCloseDialog = () => {
-    setDialogOpen(false);
+  const handleCloseCreateDialog = () => {
+    setCreateDialogOpen(false);
+  };
+
+  const handleCloseUpdateDialog = () => {
+    setUpdateDialogOpen(false);
     setSelectedEmployee(null);
   };
 
@@ -165,6 +205,19 @@ export default function EmployeesPage() {
     employee.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     employee.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const getEmployeeRoleName = (employee: Employee) => {
+    switch (employee.role) {
+      case "MANAGER":
+        return "Quản Lý"
+      case "FLORIST":
+        return "Thợ Hoa"
+      case "SALE":
+        return "Kinh Doanh"
+      default:
+        return "Nhân Viên"
+    }
+  }
 
   return (
     <Box sx={{ width: '100%', p: 3 }}>
@@ -254,7 +307,7 @@ export default function EmployeesPage() {
                 <TableCell>
                   {employee.gender === 'MALE' ? 'Nam' : employee.gender === 'FEMALE' ? 'Nữ' : 'Khác'}
                 </TableCell>
-                <TableCell>{employee.role == "MANAGER" ? "Quản Lý" :  employee.role == "FLORIST" ? "Thợ Hoa" : "Nhân Viên" }</TableCell>
+                <TableCell>{getEmployeeRoleName(employee)}</TableCell>
                 <TableCell>
                   <Stack direction="row" alignItems="center" spacing={1}>
                     <Switch
@@ -312,13 +365,26 @@ export default function EmployeesPage() {
         </Box>
       )}
 
-      {/* Employee Dialog */}
-      <EmployeeDialog
-        open={dialogOpen}
-        onClose={handleCloseDialog}
+      {/* Create Employee Dialog */}
+      <CreateEmployeeDialog
+        open={createDialogOpen}
+        onClose={handleCloseCreateDialog}
         onSave={handleSaveEmployee}
-        employee={selectedEmployee}
+        roles={roles}
+        facilities={facilities}
       />
+
+      {/* Update Employee Dialog */}
+      {selectedEmployee && (
+        <UpdateEmployeeDialog
+          open={updateDialogOpen}
+          onClose={handleCloseUpdateDialog}
+          onSave={handleSaveEmployee}
+          employee={selectedEmployee}
+          roles={roles}
+          facilities={facilities}
+        />
+      )}
     </Box>
   );
 }

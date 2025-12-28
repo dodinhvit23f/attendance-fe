@@ -11,6 +11,8 @@ export interface Employee {
   role: string;
   active: boolean;
   version: number;
+  phoneNumber: string
+  address: string
 }
 
 export interface GetEmployeesParams {
@@ -58,6 +60,46 @@ export interface UpdateEmployeeStatusResponse {
   data: boolean;
 }
 
+export interface UpdateEmployeeRequest {
+  role: string;
+  facilityIds: number[];
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  address: string;
+  dateOfBirth: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  password?: string;
+}
+
+export interface UpdateEmployeeResponse {
+  traceId: string;
+  data: Employee;
+}
+
+export interface EmployeeDetail {
+  id: number;
+  employeeId: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  address: string;
+  dateOfBirth: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  active: boolean;
+  version: number;
+  role: string;
+  facilities: {
+    id: number;
+    name: string;
+  }[];
+}
+
+export interface GetEmployeeResponse {
+  traceId: string;
+  data: EmployeeDetail;
+}
+
 /**
  * Fetch paginated list of employees from admin API
  * @param params - Pagination and filtering parameters
@@ -98,6 +140,44 @@ export const getEmployees = async (
     }
     const error = await response.json();
     throw new Error(error.errorCodes?.[0] || 'Failed to fetch employees');
+  }
+
+  return response.json();
+};
+
+/**
+ * Fetch a single employee by ID
+ * @param id - Employee ID
+ * @returns Promise with employee details
+ */
+export const getEmployee = async (
+    id: string
+): Promise<GetEmployeeResponse> => {
+  const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+
+  if (!accessToken) {
+    throw new Error('Access token not found. Please login first.');
+  }
+
+  const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_ADMIN_EMPLOYEES}/${id}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      const unauthorizedError = new Error('Unauthorized. Please login again.');
+      (unauthorizedError as any).status = 401;
+      throw unauthorizedError;
+    }
+    const error = await response.json();
+    throw new Error(error.errorCodes?.[0] || 'Failed to fetch employee');
   }
 
   return response.json();
@@ -188,6 +268,47 @@ export const updateEmployeeStatus = async (
     }
     const error = await response.json();
     throw new Error(error.errorCodes?.[0] || 'Failed to update employee status');
+  }
+
+  return response.json();
+};
+
+/**
+ * Update an existing employee
+ * @param id - Employee ID
+ * @param employeeData - Employee data to update
+ * @returns Promise with updated employee data
+ */
+export const updateEmployee = async (
+    id: string,
+    employeeData: UpdateEmployeeRequest
+): Promise<UpdateEmployeeResponse> => {
+  const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+
+  if (!accessToken) {
+    throw new Error('Access token not found. Please login first.');
+  }
+
+  const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_ADMIN_EMPLOYEES}/${id}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(employeeData),
+      }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      const unauthorizedError = new Error('Unauthorized. Please login again.');
+      (unauthorizedError as any).status = 401;
+      throw unauthorizedError;
+    }
+    const error = await response.json();
+    throw new Error(error.errorCodes?.[0] || 'Failed to update employee');
   }
 
   return response.json();
