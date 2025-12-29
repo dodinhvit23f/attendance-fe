@@ -280,7 +280,7 @@ export const updateEmployeeStatus = async (
  * @returns Promise with updated employee data
  */
 export const updateEmployee = async (
-    id: string,
+    id: number,
     employeeData: UpdateEmployeeRequest
 ): Promise<UpdateEmployeeResponse> => {
   const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
