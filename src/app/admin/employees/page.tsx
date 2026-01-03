@@ -201,7 +201,7 @@ export default function EmployeesPage() {
     setPage(0);
   };
 
-  const filteredEmployees = employees.filter((employee) =>
+  const filteredEmployees = employees?.filter((employee) =>
     employee.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     employee.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -295,51 +295,78 @@ export default function EmployeesPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredEmployees.map((employee) => (
-              <TableRow
-                key={employee.id}
-                sx={{ '&:hover': { backgroundColor: '#F9F9F9' } }}
-              >
-                <TableCell>{employee.employeeId}</TableCell>
-                <TableCell>{employee.fullName}</TableCell>
-                <TableCell>{employee.email}</TableCell>
-                <TableCell>{employee.dateOfBirth}</TableCell>
-                <TableCell>
-                  {employee.gender === 'MALE' ? 'Nam' : employee.gender === 'FEMALE' ? 'Nữ' : 'Khác'}
-                </TableCell>
-                <TableCell>{getEmployeeRoleName(employee)}</TableCell>
-                <TableCell>
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <Switch
-                      checked={employee.active}
-                      onChange={() => handleToggleStatus(employee.id, employee.active)}
-                      color="success"
-                      size="small"
-                      disabled={togglingId === employee.id}
-                    />
-                    <Typography variant="body2" color="text.secondary">
-                      {togglingId === employee.id ? 'Đang cập nhật...' : (employee.active ? 'Hoạt động' : 'Ngừng hoạt động')}
+            {!employees || employees.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} sx={{ border: 0 }}>
+                  <Box sx={{ textAlign: 'center', py: 8 }}>
+                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                      Chưa có nhân viên nào
                     </Typography>
-                  </Stack>
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton
-                    size="small"
-                    color="primary"
-                    onClick={() => handleEditEmployee(employee.id)}
-                  >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                  {/*<IconButton
-                    size="small"
-                    color="error"
-                    onClick={() => handleDeleteEmployee(employee.id)}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>*/}
+                    <Typography color="text.secondary" sx={{ mb: 2 }}>
+                      Bắt đầu bằng cách thêm nhân viên đầu tiên
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={handleAddEmployee}
+                      sx={{
+                        borderRadius: '8px',
+                        textTransform: 'none',
+                        px: 3,
+                      }}
+                    >
+                      Thêm Nhân Viên
+                    </Button>
+                  </Box>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              employees.map((employee) => (
+                <TableRow
+                  key={employee.id}
+                  sx={{ '&:hover': { backgroundColor: '#F9F9F9' } }}
+                >
+                  <TableCell>{employee.employeeId}</TableCell>
+                  <TableCell>{employee.fullName}</TableCell>
+                  <TableCell>{employee.email}</TableCell>
+                  <TableCell>{employee.dateOfBirth}</TableCell>
+                  <TableCell>
+                    {employee.gender === 'MALE' ? 'Nam' : employee.gender === 'FEMALE' ? 'Nữ' : 'Khác'}
+                  </TableCell>
+                  <TableCell>{getEmployeeRoleName(employee)}</TableCell>
+                  <TableCell>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Switch
+                        checked={employee.active}
+                        onChange={() => handleToggleStatus(employee.id, employee.active)}
+                        color="success"
+                        size="small"
+                        disabled={togglingId === employee.id}
+                      />
+                      <Typography variant="body2" color="text.secondary">
+                        {togglingId === employee.id ? 'Đang cập nhật...' : (employee.active ? 'Hoạt động' : 'Ngừng hoạt động')}
+                      </Typography>
+                    </Stack>
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={() => handleEditEmployee(employee.id)}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    {/*<IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleDeleteEmployee(employee.id)}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>*/}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
         <TablePagination
@@ -356,14 +383,6 @@ export default function EmployeesPage() {
           }
         />
       </TableContainer>
-
-      {filteredEmployees.length === 0 && (
-        <Box sx={{ textAlign: 'center', py: 4 }}>
-          <Typography color="text.secondary">
-            Không tìm thấy nhân viên nào
-          </Typography>
-        </Box>
-      )}
 
       {/* Create Employee Dialog */}
       <CreateEmployeeDialog
