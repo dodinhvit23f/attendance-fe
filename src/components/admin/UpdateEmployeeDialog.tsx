@@ -23,6 +23,11 @@ import {
   Chip,
   CircularProgress,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+import 'dayjs/locale/vi';
 import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
 import PersonIcon from '@mui/icons-material/Person';
@@ -370,25 +375,28 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
               />
 
               {/* Date of Birth */}
-              <TextField
-                label="Ngày Sinh *"
-                type="date"
-                fullWidth
-                value={formData.dateOfBirth}
-                onChange={(e) => handleChange('dateOfBirth', e.target.value)}
-                error={!!errors.dateOfBirth}
-                helperText={errors.dateOfBirth}
-                slotProps={{
-                  inputLabel: {
-                    shrink: true,
-                  },
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '8px',
-                  },
-                }}
-              />
+              <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="vi">
+                <DatePicker
+                  label="Ngày Sinh *"
+                  value={formData.dateOfBirth ? dayjs(formData.dateOfBirth) : null}
+                  onChange={(newValue) => {
+                    handleChange('dateOfBirth', newValue ? newValue.format('YYYY-MM-DD') : '');
+                  }}
+                  format="DD/MM/YYYY"
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      error: !!errors.dateOfBirth,
+                      helperText: errors.dateOfBirth,
+                      sx: {
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '8px',
+                        },
+                      },
+                    },
+                  }}
+                />
+              </LocalizationProvider>
 
               {/* Address */}
               <TextField
@@ -465,7 +473,7 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((id) => {
-                        const facility = facilities.find((f) => f.id === id);
+                        const facility = facilities?.find((f) => f.id === id);
                         return (
                           <Chip
                             key={id}
@@ -479,7 +487,7 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
                     </Box>
                   )}
                 >
-                  {facilities.map((facility) => (
+                  {facilities?.map((facility) => (
                     <MenuItem key={facility.id} value={facility.id}>
                       <Checkbox checked={formData.facilityIds.indexOf(facility.id) > -1} />
                       <ListItemText primary={facility.name} />
