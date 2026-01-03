@@ -29,6 +29,7 @@ import { FacilityDialog, FacilityData } from '@/components/admin';
 import { useLoading } from '@/components/root/client-layout';
 import { getFacilities, Facility, toggleFacilityStatus } from '@/lib/api/admin';
 import { useNotify } from '@/components/notification/NotificationProvider';
+import { ErrorMessage } from '@/lib/constants';
 
 export default function FacilitiesPage() {
   const { setLoading } = useLoading();
@@ -48,7 +49,10 @@ export default function FacilitiesPage() {
       const response = await getFacilities({ page: 0, size: 100 });
       setFacilities(response.data || []);
     } catch (error: any) {
-      notifyError(error.message || 'Không thể tải danh sách cơ sở');
+      if (error instanceof Error) {
+        const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể tải danh sách cơ sở');
+        notifyError(errorMessage);
+      }
       setFacilities([]);
     } finally {
       setIsLoadingData(false);
@@ -92,7 +96,10 @@ export default function FacilitiesPage() {
       );
       notifySuccess('Cập nhật trạng thái thành công!');
     } catch (error: any) {
-      notifyError(error.message || 'Có lỗi xảy ra khi cập nhật trạng thái');
+      if (error instanceof Error) {
+        const errorMessage = ErrorMessage.getMessage(error.message, 'Có lỗi xảy ra khi cập nhật trạng thái');
+        notifyError(errorMessage);
+      }
     } finally {
       setTogglingId(null);
     }

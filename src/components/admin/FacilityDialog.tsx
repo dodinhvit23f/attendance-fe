@@ -27,6 +27,7 @@ import MyLocationIcon from '@mui/icons-material/MyLocation';
 import { MapPicker } from './MapPicker';
 import {useNotify} from "@/components/notification/NotificationProvider";
 import { createFacility, updateFacility } from '@/lib/api/admin';
+import { ErrorMessage } from '@/lib/constants';
 
 interface FacilityDialogProps {
   open: boolean;
@@ -163,7 +164,10 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
       });
       handleClose();
     } catch (error: any) {
-      notifyError(error.message || 'Có lỗi xảy ra khi lưu cơ sở');
+      if (error instanceof Error) {
+        const errorMessage = ErrorMessage.getMessage(error.message, 'Có lỗi xảy ra khi lưu cơ sở');
+        notifyError(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
     }

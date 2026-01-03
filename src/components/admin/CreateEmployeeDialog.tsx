@@ -39,6 +39,7 @@ import { createEmployee } from '@/lib/api/admin/employees';
 import { type Role } from '@/lib/api/admin/roles';
 import { FacilityLight } from '@/lib/api/admin/facilities';
 import { useNotify } from '@/components/notification/NotificationProvider';
+import { ErrorMessage } from '@/lib/constants';
 
 interface CreateEmployeeDialogProps {
   open: boolean;
@@ -215,10 +216,13 @@ export const CreateEmployeeDialog: React.FC<CreateEmployeeDialogProps> = ({
       // Call parent's onSave callback
       onSave();
       handleClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create employee:', error);
-      // Show error notification
-      notifyError(error instanceof Error ? error.message : 'Không thể tạo nhân viên');
+      // Show error notification with mapped message
+      if (error instanceof Error) {
+        const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể tạo nhân viên');
+        notifyError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

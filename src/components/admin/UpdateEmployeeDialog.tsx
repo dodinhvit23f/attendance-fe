@@ -39,6 +39,7 @@ import { updateEmployee, getEmployee } from '@/lib/api/admin/employees';
 import { type Role } from '@/lib/api/admin/roles';
 import { FacilityLight } from '@/lib/api/admin/facilities';
 import { useNotify } from '@/components/notification/NotificationProvider';
+import { ErrorMessage } from '@/lib/constants';
 
 export interface UpdateEmployeeData {
   id: number
@@ -134,9 +135,12 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
           });
           setErrors({});
           setShowPassword(false);
-        } catch (error) {
+        } catch (error: any) {
           console.error('Failed to fetch employee data:', error);
-          notifyError('Không thể tải thông tin nhân viên');
+          if (error instanceof Error) {
+            const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể tải thông tin nhân viên');
+            notifyError(errorMessage);
+          }
         } finally {
           setFetchingEmployee(false);
         }
@@ -240,10 +244,13 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
       // Call parent's onSave callback
       onSave();
       handleClose();
-    } catch (error) {
-      console.error('Failed to update employee:', error);
-      // Show error notification
-      notifyError(error instanceof Error ? error.message : 'Không thể cập nhật nhân viên');
+    } catch (error: any) {
+      if(error instanceof Error){
+        const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể cập nhật nhân viên');
+        notifyError(errorMessage);
+      }
+      // Show error notification with mapped message
+
     } finally {
       setLoading(false);
     }

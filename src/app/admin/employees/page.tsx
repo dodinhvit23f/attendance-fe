@@ -30,6 +30,7 @@ import { getEmployees, Employee, updateEmployeeStatus } from '@/lib/api/admin/em
 import { getRoles, type Role } from '@/lib/api/admin/roles';
 import { FacilityLight, getFacilitiesLight } from '@/lib/api/admin/facilities';
 import { useNotify } from '@/components/notification/NotificationProvider';
+import { ErrorMessage } from '@/lib/constants';
 
 // Mock facilities data
 const mockFacilities: Facility[] = [
@@ -173,9 +174,12 @@ export default function EmployeesPage() {
       );
 
       notifySuccess('Cập nhật trạng thái thành công!');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating employee status:', err);
-      notifyError(err instanceof Error ? err.message : 'Có lỗi xảy ra khi cập nhật trạng thái');
+      if (err instanceof Error) {
+        const errorMessage = ErrorMessage.getMessage(err.message, 'Có lỗi xảy ra khi cập nhật trạng thái');
+        notifyError(errorMessage);
+      }
       // Reload to get correct state from server
       fetchEmployees();
     } finally {
