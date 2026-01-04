@@ -100,6 +100,18 @@ export interface GetEmployeeResponse {
   data: EmployeeDetail;
 }
 
+export interface ActiveEmployee {
+  id: number;
+  userName: string;
+}
+
+export interface GetActiveEmployeesResponse {
+  traceId: string;
+  data: {
+    users: ActiveEmployee[];
+  };
+}
+
 /**
  * Fetch paginated list of employees from admin API
  * @param params - Pagination and filtering parameters
@@ -309,6 +321,41 @@ export const updateEmployee = async (
     }
     const error = await response.json();
     throw new Error(error.errorCodes?.[0] || 'Failed to update employee');
+  }
+
+  return response.json();
+};
+
+/**
+ * Get list of active employees (username and fullName only)
+ * @returns Promise with active employees list
+ */
+export const getActiveEmployees = async (): Promise<GetActiveEmployeesResponse> => {
+  const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+
+  if (!accessToken) {
+    throw new Error('Access token not found. Please login first.');
+  }
+
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_ADMIN_EMPLOYEES}/active`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      const unauthorizedError = new Error('Unauthorized. Please login again.');
+      (unauthorizedError as any).status = 401;
+      throw unauthorizedError;
+    }
+    const error = await response.json();
+    throw new Error(error.errorCodes?.[0] || 'Failed to fetch active employees');
   }
 
   return response.json();

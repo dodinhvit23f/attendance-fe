@@ -53,6 +53,7 @@ export class ErrorMessage {
   public static readonly ROLE_IS_REQUIRED = 'ERROR_EMPLOYEE_011';
   public static readonly FACILITY_IDS_IS_REQUIRED = 'ERROR_EMPLOYEE_012';
   public static readonly USERNAME_ALREADY_EXISTS = 'ERROR_EMPLOYEE_013';
+  public static readonly ROLE_NAME_NOT_FOUND = 'ERROR_EMPLOYEE_014';
 
   // QR Code Error Codes
   public static readonly QR_CODE_GENERATION_FAILED = 'ERROR_QR_001';

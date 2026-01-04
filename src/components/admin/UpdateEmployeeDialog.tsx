@@ -234,7 +234,7 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
       if (formData.password.trim()) {
         requestData.password = formData.password;
       }
-
+      console.log(requestData)
       // Call the API PUT /admin/v1/employees/{id}
       await updateEmployee(employee.id, requestData);
 

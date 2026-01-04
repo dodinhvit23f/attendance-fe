@@ -18,66 +18,25 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel, Button,
+  InputLabel,
+  Button,
+  Checkbox,
+  ListItemText,
+  OutlinedInput,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
-import { useEffect } from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import { useLoading } from '@/components/root/client-layout';
 import { CameraCapture } from '@/components/admin/CameraCapture';
 import { useNotify } from '@/components/notification/NotificationProvider';
-
-// Mock data
-const mockAttendances = [
-  {
-    id: 1,
-    employeeName: 'Nguyễn Văn A',
-    date: '2025-12-14',
-    checkIn: '08:30',
-    checkOut: '17:45',
-    status: 'present',
-    duration: '9h 15m',
-  },
-  {
-    id: 2,
-    employeeName: 'Trần Thị B',
-    date: '2025-12-14',
-    checkIn: '08:45',
-    checkOut: '18:00',
-    status: 'present',
-    duration: '9h 15m',
-  },
-  {
-    id: 3,
-    employeeName: 'Lê Văn C',
-    date: '2025-12-14',
-    checkIn: '09:15',
-    checkOut: '-',
-    status: 'late',
-    duration: '-',
-  },
-  {
-    id: 4,
-    employeeName: 'Phạm Thị D',
-    date: '2025-12-14',
-    checkIn: '-',
-    checkOut: '-',
-    status: 'absent',
-    duration: '-',
-  },
-  {
-    id: 5,
-    employeeName: 'Hoàng Văn E',
-    date: '2025-12-13',
-    checkIn: '08:00',
-    checkOut: '17:30',
-    status: 'present',
-    duration: '9h 30m',
-  },
-];
+import { getAttendances, type Attendance } from '@/lib/api/admin/attendances';
+import { getActiveEmployees, type ActiveEmployee } from '@/lib/api/admin/employees';
+import { ErrorMessage } from '@/lib/constants';
+import dayjs from 'dayjs';
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -120,14 +79,65 @@ const getStatusIcon = (status: string) => {
 
 export default function AttendancesPage() {
   const { setLoading } = useLoading();
-  const { notifySuccess } = useNotify();
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [statusFilter, setStatusFilter] = React.useState('all');
-  const [cameraOpen, setCameraOpen] = React.useState(false);
+  const { notifySuccess, notifyError } = useNotify();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [attendances, setAttendances] = useState<Attendance[]>([]);
+  const [activeEmployees, setActiveEmployees] = useState<ActiveEmployee[]>([]);
+  const [selectedUserNames, setSelectedUserNames] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState(dayjs().format('YYYY-MM-DD'));
+  const [endDate, setEndDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DD'));
+
+  // Fetch active employees
+  useEffect(() => {
+    const fetchActiveEmployees = async () => {
+      try {
+        const response = await getActiveEmployees();
+        setActiveEmployees(response.data.users);
+      } catch (error: any) {
+        console.error('Failed to fetch active employees:', error);
+        if (error instanceof Error) {
+          const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể tải danh sách nhân viên');
+          notifyError(errorMessage);
+        }
+      }
+    };
+
+    fetchActiveEmployees();
+  }, [notifyError]);
+
+  // Fetch attendances
+  const fetchAttendances = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await getAttendances({
+        startDate,
+        endDate,
+        userNames: selectedUserNames.length > 0 ? selectedUserNames.join(',') : undefined,
+      });
+      // Ensure response.data is an array before setting
+      if (Array.isArray(response.data)) {
+        setAttendances(response.data);
+      } else {
+        console.error('Invalid response format: data is not an array', response);
+        setAttendances([]);
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch attendances:', error);
+      if (error instanceof Error) {
+        const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể tải dữ liệu chấm công');
+        notifyError(errorMessage);
+      }
+      setAttendances([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [startDate, endDate, selectedUserNames, setLoading, notifyError]);
 
   useEffect(() => {
-    setLoading(false);
-  }, []);
+    fetchAttendances();
+  }, [fetchAttendances]);
 
   const handleOpenCamera = () => {
     setCameraOpen(true);
@@ -144,14 +154,19 @@ export default function AttendancesPage() {
     // TODO: Send imageData to backend for attendance verification
   };
 
-  const filteredAttendances = mockAttendances.filter((attendance) => {
-    const matchesSearch = attendance.employeeName
+  const filteredAttendances = attendances.filter((attendance) => {
+    const matchesSearch = attendance.fullName
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesStatus =
       statusFilter === 'all' || attendance.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const handleUserNameChange = (event: any) => {
+    const value = event.target.value;
+    setSelectedUserNames(typeof value === 'string' ? value.split(',') : value);
+  };
 
   return (
     <Box sx={{ width: '100%', p: 3 }}>
@@ -165,7 +180,7 @@ export default function AttendancesPage() {
         <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
           Quản Lý Chấm Công
         </Typography>
-        <Button
+        {/*<Button
           variant="contained"
           startIcon={<CameraAltIcon />}
           onClick={handleOpenCamera}
@@ -175,35 +190,68 @@ export default function AttendancesPage() {
             px: 3,
           }}
         >
-          Chụp Ảnh Điểm Danh
-        </Button>
+          Chấm Công
+        </Button>*/}
       </Stack>
 
       {/* Filters */}
-      <Stack direction="row" spacing={2} mb={3}>
+      <Stack direction="row" spacing={2} mb={3} flexWrap="wrap">
         <TextField
-          placeholder="Tìm kiếm theo tên nhân viên..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          label="Ngày bắt đầu"
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
           slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
+            inputLabel: {
+              shrink: true,
             },
           }}
           sx={{
-            flexGrow: 1,
-            maxWidth: 400,
+            minWidth: 200,
             '& .MuiOutlinedInput-root': {
               borderRadius: '8px',
             },
           }}
         />
 
-        <FormControl sx={{ minWidth: 200 }}>
+        <TextField
+          label="Ngày kết thúc"
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          slotProps={{
+            inputLabel: {
+              shrink: true,
+            },
+          }}
+          sx={{
+            minWidth: 200,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '8px',
+            },
+          }}
+        />
+
+        <FormControl sx={{ minWidth: 250 }}>
+          <InputLabel>Nhân viên</InputLabel>
+          <Select
+            multiple
+            value={selectedUserNames}
+            onChange={handleUserNameChange}
+            input={<OutlinedInput label="Nhân viên" />}
+            renderValue={(selected) => selected.join(', ')}
+            sx={{ borderRadius: '8px' }}
+          >
+            {activeEmployees && activeEmployees.map((employee) => (
+              <MenuItem key={employee.userName} value={employee.userName}>
+                <Checkbox checked={selectedUserNames.indexOf(employee.userName) > -1} />
+                <ListItemText primary={employee.userName} />
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl sx={{ minWidth: 150 }}>
           <InputLabel>Trạng thái</InputLabel>
           <Select
             value={statusFilter}
@@ -234,7 +282,7 @@ export default function AttendancesPage() {
           <CheckCircleIcon color="success" sx={{ fontSize: 40 }} />
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 600 }}>
-              3
+              {attendances.filter(a => a.status === 'present').length}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Có mặt
@@ -255,7 +303,7 @@ export default function AttendancesPage() {
           <AccessTimeIcon color="warning" sx={{ fontSize: 40 }} />
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 600 }}>
-              1
+              {attendances.filter(a => a.status === 'late').length}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Đi muộn
@@ -276,7 +324,7 @@ export default function AttendancesPage() {
           <CancelIcon color="error" sx={{ fontSize: 40 }} />
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 600 }}>
-              1
+              {attendances.filter(a => a.status === 'absent').length}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Vắng mặt
@@ -300,50 +348,56 @@ export default function AttendancesPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredAttendances.map((attendance) => (
-              <TableRow
-                key={attendance.id}
-                sx={{ '&:hover': { backgroundColor: '#F9F9F9' } }}
-              >
-                <TableCell>{attendance.id}</TableCell>
-                <TableCell>{attendance.employeeName}</TableCell>
-                <TableCell>{attendance.date}</TableCell>
-                <TableCell>
-                  {attendance.checkIn !== '-' ? (
-                    <Chip label={attendance.checkIn} size="small" variant="outlined" />
-                  ) : (
-                    '-'
-                  )}
-                </TableCell>
-                <TableCell>
-                  {attendance.checkOut !== '-' ? (
-                    <Chip label={attendance.checkOut} size="small" variant="outlined" />
-                  ) : (
-                    '-'
-                  )}
-                </TableCell>
-                <TableCell>{attendance.duration}</TableCell>
-                <TableCell>
-                  <Chip
-                    //icon={getStatusIcon(attendance.status)}
-                    label={getStatusLabel(attendance.status)}
-                    color={getStatusColor(attendance.status)}
-                    size="small"
-                  />
+            {filteredAttendances.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} sx={{ border: 0 }}>
+                  <Box sx={{ textAlign: 'center', py: 8 }}>
+                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                      Không có dữ liệu chấm công
+                    </Typography>
+                    <Typography color="text.secondary">
+                      Không tìm thấy bản ghi chấm công trong khoảng thời gian đã chọn
+                    </Typography>
+                  </Box>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              filteredAttendances.map((attendance) => (
+                <TableRow
+                  key={attendance.id}
+                  sx={{ '&:hover': { backgroundColor: '#F9F9F9' } }}
+                >
+                  <TableCell>{attendance.id}</TableCell>
+                  <TableCell>{attendance.fullName}</TableCell>
+                  <TableCell>{attendance.date}</TableCell>
+                  <TableCell>
+                    {attendance.checkInTime ? (
+                      <Chip label={attendance.checkInTime} size="small" variant="outlined" />
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {attendance.checkOutTime ? (
+                      <Chip label={attendance.checkOutTime} size="small" variant="outlined" />
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+                  <TableCell>{attendance.duration || '-'}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={getStatusLabel(attendance.status)}
+                      color={getStatusColor(attendance.status)}
+                      size="small"
+                    />
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
-
-      {filteredAttendances.length === 0 && (
-        <Box sx={{ textAlign: 'center', py: 4 }}>
-          <Typography color="text.secondary">
-            Không tìm thấy dữ liệu điểm danh
-          </Typography>
-        </Box>
-      )}
 
       {/* Camera Capture Dialog */}
       <CameraCapture
