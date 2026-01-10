@@ -7,7 +7,8 @@ import {useLoading} from "@/components/root/client-layout";
 import {loginApi} from "@/lib/api/auth";
 import {useNotify} from "@/components/notification/NotificationProvider";
 import {useRouter} from "next/navigation";
-import { STORAGE_KEYS } from '@/lib/constants/storage';
+import {STORAGE_KEYS} from '@/lib/constants/storage';
+import {ErrorMessage} from "@/lib/constants";
 
 
 interface LoginFormProps {
@@ -42,9 +43,7 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
       router.push("/auth/qr/verify")
     })
     .catch((reason) => {
-      if (reason.message == 'ERROR_005') {
-        notifyError('Tài khoản đăng nhập hoặc mật khẩu không đúng')
-      }
+      notifyError(ErrorMessage.getMessage(reason.message, 'Tài khoản đăng nhập hoặc mật khẩu không đúng'))
 
     })
     .finally(() => setLoading(false))

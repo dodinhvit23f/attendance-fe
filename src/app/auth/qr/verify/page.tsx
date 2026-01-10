@@ -33,14 +33,16 @@ export default function QRVerifyPage() {
       // Redirect to /admin if user has ADMIN role
       if (response.data.roles.includes('ADMIN')) {
         router.push('/admin');
+      } else if (response.data.roles.includes('ADMIN')){
+        router.push('/manager');
       } else {
-        // Redirect to home or dashboard for non-admin users
+        router.push('/manager');
       }
     } catch (error) {
       setLoading(false);
 
       if(error instanceof Error){
-        if (error.message == "ERROR_011") {
+        if (error.message == "ERROR_AUTH_011") {
           router.push('/');
           localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN)
           notifyError('Phiên đăng nhập hết hạn');

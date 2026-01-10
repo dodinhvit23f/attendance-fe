@@ -38,7 +38,7 @@ export default function QRGeneratorPage() {
 
         if (error instanceof Error) {
           notifyError('Không thể tạo mã QR. Vui lòng thử lại.');
-          if (error.message == "ERROR_011") {
+          if (error.message == "ERROR_AUTH_011") {
             router.push('/');
             localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
             return

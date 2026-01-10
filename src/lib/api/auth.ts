@@ -81,7 +81,6 @@ export const otpLoginApi = async (otp: string): Promise<OtpLoginResponse> => {
   if (!otpToken) {
     throw new Error('OTP token not found. Please login first.');
   }
-
   const response = await fetch(process.env.NEXT_PUBLIC_API_LOGIN_WITH_OTP!, {
     method: 'POST',
     headers: {
