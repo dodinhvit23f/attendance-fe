@@ -4,12 +4,21 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Box } from '@mui/material';
 import 'leaflet/dist/leaflet.css';
 
+interface FacilityLocation {
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  distance?: number;
+}
+
 interface MapPickerProps {
   latitude: number;
   longitude: number;
   onLocationChange: (lat: number, lng: number) => void;
   address?: string;
   userLocation?: { lat: number; lng: number } | null;
+  facilities?: FacilityLocation[];
 }
 
 export const MapPicker: React.FC<MapPickerProps> = ({
@@ -18,11 +27,14 @@ export const MapPicker: React.FC<MapPickerProps> = ({
   onLocationChange,
   address,
   userLocation,
+  facilities,
 }) => {
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
   const lineRef = useRef<any>(null);
+  const facilityMarkersRef = useRef<any[]>([]);
+  const facilityLinesRef = useRef<any[]>([]);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [L, setL] = useState<any>(null);
 
@@ -165,6 +177,82 @@ export const MapPicker: React.FC<MapPickerProps> = ({
       mapRef.current.fitBounds(bounds, { padding: [50, 50] });
     }
   }, [L, userLocation, latitude, longitude]);
+
+  // Handle multiple facilities with distances
+  useEffect(() => {
+    if (!L || !mapRef.current || !facilities || facilities.length === 0) return;
+
+    // Remove existing facility markers and lines
+    facilityMarkersRef.current.forEach((marker) => marker.remove());
+    facilityMarkersRef.current = [];
+    facilityLinesRef.current.forEach((line) => line.remove());
+    facilityLinesRef.current = [];
+
+    // Hide single marker when showing multiple facilities
+    if (markerRef.current) {
+      markerRef.current.remove();
+    }
+
+    // Create red icon for facility locations
+    const redIcon = L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41],
+    });
+
+    const allCoords: [number, number][] = [];
+
+    // Add markers for all facilities
+    facilities.forEach((facility) => {
+      const distanceText = facility.distance !== undefined
+        ? facility.distance < 1000
+          ? `${Math.round(facility.distance)} m`
+          : `${(facility.distance / 1000).toFixed(2)} km`
+        : '';
+
+      const marker = L.marker([facility.latitude, facility.longitude], {
+        icon: redIcon,
+        draggable: false,
+      })
+        .addTo(mapRef.current)
+        .bindPopup(`<b>${facility.name}</b>${distanceText ? `<br/>Khoảng cách: ${distanceText}` : ''}`);
+
+      facilityMarkersRef.current.push(marker);
+      allCoords.push([facility.latitude, facility.longitude]);
+
+      // Draw line from user to each facility if user location exists
+      if (userLocation) {
+        const line = L.polyline(
+          [
+            [userLocation.lat, userLocation.lng],
+            [facility.latitude, facility.longitude],
+          ],
+          {
+            color: '#3b82f6',
+            weight: 2,
+            opacity: 0.5,
+            dashArray: '10, 10',
+          }
+        ).addTo(mapRef.current);
+
+        facilityLinesRef.current.push(line);
+      }
+    });
+
+    // Add user location to bounds if available
+    if (userLocation) {
+      allCoords.push([userLocation.lat, userLocation.lng]);
+    }
+
+    // Fit map to show all markers
+    if (allCoords.length > 0) {
+      const bounds = L.latLngBounds(allCoords);
+      mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }, [L, facilities, userLocation]);
 
   return (
     <Box

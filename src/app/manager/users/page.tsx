@@ -27,11 +27,10 @@ import { useLoading } from '@/components/root/client-layout';
 import { useNotify } from '@/components/notification/NotificationProvider';
 import {
   getManagerUsers,
-  getManagerFacilities,
   type ManagerEmployee,
-  type ManagerFacility,
 } from '@/lib/api/manager/users';
 import { ErrorMessage } from '@/lib/constants';
+import {getManagerFacilities, ManagerFacility} from "@/lib/api/manager/facilities";
 
 export default function ManagerUsersPage() {
   const { setLoading } = useLoading();
@@ -45,10 +44,10 @@ export default function ManagerUsersPage() {
     const fetchFacilities = async () => {
       try {
         const response = await getManagerFacilities();
-        if (Array.isArray(response.data.facilities)) {
-          setFacilities(response.data.facilities);
+        if (Array.isArray(response.data)) {
+          setFacilities(response.data);
         } else {
-          console.error('Invalid response format: facilities is not an array', response);
+          console.error('Invalid response format: data is not an array', response);
           setFacilities([]);
         }
       } catch (error: any) {
