@@ -578,6 +578,9 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
             </Stack>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
               💡 Mẹo: Nhấp vào bản đồ để đặt pin đỏ, hoặc kéo pin đến vị trí mong muốn.
+              <Typography variant="caption" color="primary">
+                Bạn nên sử dụng thiết vị có định vị GPS để xác định khoảng cách phù hợp.
+              </Typography>
             </Typography>
           </Box>
         </Stack>

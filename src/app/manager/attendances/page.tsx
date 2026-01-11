@@ -199,9 +199,6 @@ export default function ManagerAttendancesPage() {
                   <Typography variant="h6" color="text.secondary" gutterBottom>
                     Chưa có dữ liệu
                   </Typography>
-                  <Typography color="text.secondary">
-                    Trang quản lý chấm công đang được phát triển
-                  </Typography>
                 </Box>
               </TableCell>
             </TableRow>

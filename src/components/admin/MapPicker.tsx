@@ -36,13 +36,34 @@ export const MapPicker: React.FC<MapPickerProps> = ({
   const facilityMarkersRef = useRef<any[]>([]);
   const facilityLinesRef = useRef<any[]>([]);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mountedRef = useRef<boolean>(true);
   const [L, setL] = useState<any>(null);
+
+  // Store initial coordinates and callback in refs to avoid dependency issues
+  const initialLatRef = useRef(latitude);
+  const initialLngRef = useRef(longitude);
+  const onLocationChangeRef = useRef(onLocationChange);
+
+  // Keep the callback ref up to date
+  useEffect(() => {
+    onLocationChangeRef.current = onLocationChange;
+  }, [onLocationChange]);
+
+  // Track mounted state
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Load Leaflet on client side only
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     import('leaflet').then((leaflet) => {
+      if (!mountedRef.current) return;
+
       const L = leaflet.default;
 
       // Fix Leaflet default icon issue with Next.js
@@ -61,8 +82,11 @@ export const MapPicker: React.FC<MapPickerProps> = ({
   useEffect(() => {
     if (!L || !mapContainerRef.current || mapRef.current) return;
 
-    // Initialize map
-    const map = L.map(mapContainerRef.current).setView([latitude, longitude], 15);
+    // Initialize map using initial coordinates from refs
+    const map = L.map(mapContainerRef.current).setView(
+      [initialLatRef.current, initialLngRef.current],
+      15
+    );
 
     // Add OpenStreetMap tiles (Free!)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -81,33 +105,52 @@ export const MapPicker: React.FC<MapPickerProps> = ({
     });
 
     // Add marker
-    const marker = L.marker([latitude, longitude], {
+    const marker = L.marker([initialLatRef.current, initialLngRef.current], {
       draggable: true,
       icon: redIcon,
     }).addTo(map);
 
     // Handle marker drag
     marker.on('dragend', () => {
+      if (!mountedRef.current) return;
       const position = marker.getLatLng();
-      onLocationChange(position.lat, position.lng);
+      onLocationChangeRef.current(position.lat, position.lng);
     });
 
     // Handle map click
     map.on('click', (e: { latlng: { lat: any; lng: any; }; }) => {
+      if (!mountedRef.current) return;
       const { lat, lng } = e.latlng;
       marker.setLatLng([lat, lng]);
-      onLocationChange(lat, lng);
+      onLocationChangeRef.current(lat, lng);
     });
 
     mapRef.current = map;
     markerRef.current = marker;
 
     return () => {
-      map.remove();
-      mapRef.current = null;
+      // Clean up markers first
+      if (userMarkerRef.current) {
+        userMarkerRef.current.remove();
+        userMarkerRef.current = null;
+      }
+      if (lineRef.current) {
+        lineRef.current.remove();
+        lineRef.current = null;
+      }
+      facilityMarkersRef.current.forEach((m) => m.remove());
+      facilityMarkersRef.current = [];
+      facilityLinesRef.current.forEach((l) => l.remove());
+      facilityLinesRef.current = [];
+
+      // Then remove the map
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
       markerRef.current = null;
     };
-  }, [L, latitude, longitude]);
+  }, [L]);
 
   // Update marker position when coordinates change
   useEffect(() => {
