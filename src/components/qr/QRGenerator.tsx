@@ -1,52 +1,64 @@
 'use client';
 
 import React, {useState} from 'react';
-import {Box, Button, Stack, Typography, useTheme} from '@mui/material';
-import {CheckCircle, Download} from '@mui/icons-material';
+import {Box, Button, Stack, TextField, Typography, useTheme} from '@mui/material';
+import {CheckCircle} from '@mui/icons-material';
+import QRCode from 'react-qr-code';
+import {otpVerifyApi} from '@/lib/api/auth';
+import {useRouter} from 'next/navigation';
 
 interface QRGeneratorProps {
-  onConfirm?: (qrImageUrl: string) => void;
-  apiEndpoint?: string;
+  qrData?: string; // OTP auth URL or any data to encode
+  setLoading?: (loading: boolean) => void;
+  notifySuccess?: (message: string) => void;
+  notifyError?: (message: string) => void;
 }
 
 export const QRGenerator: React.FC<QRGeneratorProps> = ({
-  onConfirm,
-  apiEndpoint = '/api/qr/generate' // Default API endpoint
+  qrData,
+  setLoading,
+  notifySuccess,
+  notifyError
 }) => {
   const theme = useTheme();
-  const [qrImageUrl, setQrImageUrl] = useState<string>('https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://example.com');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>('');
+  const router = useRouter();
+  const [otp, setOtp] = useState('');
 
-  const handleConfirm = () => {
-    if (onConfirm && qrImageUrl) {
-      onConfirm(qrImageUrl);
+  const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    if (value.length <= 6) {
+      setOtp(value);
     }
   };
 
-  const handleDownload = async () => {
-    if (!qrImageUrl) return;
+  const handleConfirm = async () => {
+    if (otp.length !== 6) {
+      notifyError?.('Vui lòng nhập đầy đủ số OTP');
+      return;
+    }
 
     try {
-      const response = await fetch(qrImageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `qr-code-${Date.now()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Download error:', err);
+      setLoading?.(true);
+      await otpVerifyApi(otp);
+      notifySuccess?.('Xác thực OTP thành công');
+      router.push('/');
+    } catch (error) {
+      if (error instanceof Error && (error as any).status === 401) {
+        router.push('/');
+        return;
+      }
+      if (error instanceof Error) {
+        notifyError?.('Mã OTP không chính xác. Vui lòng thử lại.');
+      }
+    } finally {
+      setLoading?.(false);
     }
   };
 
   return (
     <Stack spacing={3}>
       {/* QR Code Display */}
-      {qrImageUrl && !loading && (
+      {qrData && (
         <Stack spacing={2} alignItems="center">
           <Box
             sx={{
@@ -68,14 +80,10 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
                 justifyContent: 'center',
               }}
             >
-              <img
-                src={qrImageUrl}
-                alt="QR Code"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                }}
+              <QRCode
+                value={qrData}
+                size={250}
+                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
               />
             </Box>
           </Box>
@@ -89,60 +97,72 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
               fontStyle: 'italic',
             }}
           >
-            Quét mã QR này để điểm danh
+            Quét mã QR này với ứng dụng xác thực (Google Authenticator, Authy...)
           </Typography>
 
-          <Stack direction="row" spacing={2} width="100%">
-            <Button
-              variant="outlined"
-              fullWidth
-              size="large"
-              startIcon={<Download />}
-              onClick={handleDownload}
-              sx={{
-                borderRadius: '24px',
-                borderWidth: '2px',
-                borderColor: theme.palette.primary.main,
-                color: theme.palette.primary.main,
-                textTransform: 'none',
-                fontSize: '16px',
-                fontWeight: 600,
-                height: '48px',
-                '&:hover': {
-                  borderWidth: '2px',
-                  borderColor: theme.palette.primary.dark,
-                  backgroundColor: 'rgba(109, 76, 65, 0.05)',
+          <TextField
+            label="Mã OTP"
+            placeholder="Nhập Số OTP"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={otp}
+            onChange={handleOtpChange}
+            slotProps={{
+              htmlInput: {
+                maxLength: 6,
+                inputMode: 'numeric',
+                pattern: '[0-9]*',
+              },
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                backgroundColor: '#FFFFFF',
+                '& fieldset': {
+                  borderColor: theme.palette.divider,
                 },
-              }}
-            >
-              Tải xuống
-            </Button>
+                '&:hover fieldset': {
+                  borderColor: theme.palette.primary.main,
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+              '& .MuiOutlinedInput-input': {
+                padding: '12px 16px',
+                fontSize: '16px',
+                textAlign: 'center',
+                letterSpacing: '0.5em',
+                fontWeight: 600,
+              },
+            }}
+          />
 
-            <Button
-              variant="contained"
-              fullWidth
-              size="large"
-              startIcon={<CheckCircle />}
-              onClick={handleConfirm}
-              sx={{
-                borderRadius: '24px',
-                padding: '12px 24px',
-                height: '48px',
-                fontSize: '16px',
-                fontWeight: 600,
-                textTransform: 'none',
-                backgroundColor: theme.palette.primary.main,
-                color: theme.palette.primary.contrastText,
-                boxShadow: '0px 4px 12px rgba(109, 76, 65, 0.2)',
-                '&:hover': {
-                  backgroundColor: theme.palette.primary.dark,
-                  boxShadow: '0px 6px 16px rgba(109, 76, 65, 0.3)',
-                },
-              }}
-            >
-              Xác nhận
-            </Button>
-          </Stack>
+          <Button
+            variant="contained"
+            fullWidth
+            size="large"
+            startIcon={<CheckCircle />}
+            onClick={handleConfirm}
+            sx={{
+              borderRadius: '24px',
+              padding: '12px 24px',
+              height: '48px',
+              fontSize: '16px',
+              fontWeight: 600,
+              textTransform: 'none',
+              backgroundColor: theme.palette.primary.main,
+              color: theme.palette.primary.contrastText,
+              boxShadow: '0px 4px 12px rgba(109, 76, 65, 0.2)',
+              '&:hover': {
+                backgroundColor: theme.palette.primary.dark,
+                boxShadow: '0px 6px 16px rgba(109, 76, 65, 0.3)',
+              },
+            }}
+          >
+            Xác nhận
+          </Button>
         </Stack>
       )}
     </Stack>

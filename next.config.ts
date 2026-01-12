@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
+// Increase max event listeners to prevent MaxListenersExceededWarning
+require('events').EventEmitter.defaultMaxListeners = 20;
+
 const nextConfig: NextConfig = {
   /* config options here */
+  productionBrowserSourceMaps: false,
 };
 
 export default nextConfig;

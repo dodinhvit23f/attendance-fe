@@ -6,6 +6,8 @@ import PeopleIcon from '@mui/icons-material/People';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import {useEffect} from "react";
+import {useLoading} from "@/components/root/client-layout";
 
 const StatCard = ({
   title,
@@ -54,6 +56,12 @@ const StatCard = ({
 );
 
 export default function AdminDashboard() {
+  const {setLoading} = useLoading();
+
+  useEffect(() => {
+    setLoading(false)
+  }, []);
+
   return (
     <Box sx={{ width: '100%', p: 3 }}>
       {/* Header */}

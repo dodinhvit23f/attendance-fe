@@ -1,10 +1,9 @@
-
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type {Metadata} from "next";
+import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
-import {theme} from "@/app/page";
-import {CssBaseline, ThemeProvider} from "@mui/material";
-import {NotificationsProvider} from "@toolpad/core";
+import ClientLayout from "@/components/root/client-layout";
+import EmotionCacheRegistry from "@/components/root/emotion-cache-registry";
+import { DevToolsBlocker } from "@/components/DevToolsBlocker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,19 +20,25 @@ export const metadata: Metadata = {
   description: "Ứng Dụng Chấm Công Trực Tuyến",
 };
 
+
 export default function RootLayout({
-  children,
-}: Readonly<{
+                                     children,
+                                   }: Readonly<{
   children: React.ReactNode;
 }>) {
+
   return (
-    <html lang="en">
+      <html lang="vi">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        {children}
-      </ThemeProvider>
+      <DevToolsBlocker />
+      <EmotionCacheRegistry options={{ key: 'mui' }}>
+        <ClientLayout>
+          {children}
+        </ClientLayout>
+      </EmotionCacheRegistry>
       </body>
-    </html>
+      </html>
   );
 }
+
+

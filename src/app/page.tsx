@@ -1,71 +1,11 @@
 'use client';
 
 import React from 'react';
-import {Container, Box, Stack, Typography, useTheme, createTheme, Theme} from '@mui/material';
-import {
-  LoginCard,
-  LoginForm,
-  DividerWithText,
-  FooterLinks,
-} from '@/components/auth';
-
-export const theme : Theme = createTheme({
-  palette: {
-    mode: 'light',
-
-    primary: {
-      main: '#6D4C41',
-      dark: '#4E342E',
-      contrastText: '#FFFFFF',
-    },
-
-    secondary: {
-      main: '#D7CCC8',
-      contrastText: '#3E2723',
-    },
-
-    background: {
-      default: '#FFFFFF',
-      paper: '#FAF7F5',
-    },
-
-    text: {
-      primary: '#3E2723',
-      secondary: '#6D4C41',
-    },
-
-    divider: '#E0D7D3',
-
-    error: {
-      main: '#C62828',
-    },
-  },
-
-  typography: {
-    fontFamily: `'Roboto', 'Helvetica', 'Arial', sans-serif`,
-
-    h1: {
-      fontWeight: 700,
-      color: '#3E2723',
-    },
-    h2: {
-      fontWeight: 600,
-      color: '#3E2723',
-    },
-  },
-})
+import {Box, Container, Stack, Typography, useTheme} from '@mui/material';
+import {DividerWithText, FooterLinks, LoginCard, LoginForm,} from '@/components/auth';
 
 export default function Home() {
   const theme = useTheme();
-
-  const handleLogin = (data: { email: string; password: string }) => {
-    console.log('Login submitted:', data);
-  };
-
-  const handleGoogleLogin = () => {
-    console.log('Google login clicked');
-  };
-
 
   return (
     <Container
@@ -78,7 +18,6 @@ export default function Home() {
         justifyContent: 'center',
         gap: 5,
         py: 3,
-        background: 'linear-gradient(151deg, #ffffff 0%, #fff5f5 30%, #fdfdfd 55%, #ebebeb 80%, #F1F1F1 100%)',
         position: 'relative',
       }}
     >
@@ -114,7 +53,7 @@ export default function Home() {
               Đăng nhập để tiếp tục
             </Typography>
           </Stack>
-          <LoginForm onSubmit={handleLogin} />
+          <LoginForm />
           <DividerWithText />
           <Box sx={{ position: 'relative', zIndex: 1 }}>
             <FooterLinks />

@@ -21,7 +21,13 @@ import {
   Checkbox,
   ListItemText,
   Chip,
+  CircularProgress,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+import 'dayjs/locale/vi';
 import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
 import PersonIcon from '@mui/icons-material/Person';
@@ -29,77 +35,83 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import BusinessIcon from '@mui/icons-material/Business';
+import { createEmployee } from '@/lib/api/admin/employees';
+import { type Role } from '@/lib/api/admin/roles';
+import { FacilityLight } from '@/lib/api/admin/facilities';
+import { useNotify } from '@/components/notification/NotificationProvider';
+import { ErrorMessage } from '@/lib/constants';
 
-export interface Facility {
-  id: number;
-  name: string;
-}
-
-interface EmployeeDialogProps {
+interface CreateEmployeeDialogProps {
   open: boolean;
   onClose: () => void;
-  onSave: (employee: EmployeeData) => void;
-  employee?: EmployeeData | null;
-  facilities: Facility[];
+  onSave: () => void;
+  roles: Role[];
+  facilities: FacilityLight[];
 }
 
-export interface EmployeeData {
-  id?: number;
-  // Personal Information
+interface CreateEmployeeFormData {
   name: string;
   phoneNumber: string;
   email: string;
   address: string;
+  dateOfBirth: string;
   gender: 'male' | 'female' | 'other';
-  // Account Information
   accountName: string;
-  role: 'admin' | 'employee' | 'manager';
-  defaultPassword: string;
+  role: number;
+  password: string;
   facilityIds: number[];
+  active: boolean
 }
 
-export const EmployeeDialog: React.FC<EmployeeDialogProps> = ({
+export const CreateEmployeeDialog: React.FC<CreateEmployeeDialogProps> = ({
   open,
   onClose,
   onSave,
-  employee,
+  roles,
   facilities,
 }) => {
-  const [formData, setFormData] = useState<EmployeeData>({
+  const { notifyError } = useNotify();
+
+  const [formData, setFormData] = useState<CreateEmployeeFormData>({
     name: '',
     phoneNumber: '',
     email: '',
     address: '',
+    dateOfBirth: '',
     gender: 'male',
     accountName: '',
-    role: 'employee',
-    defaultPassword: '',
+    role: roles.length > 0 ? roles[0].id : 0,
+    password: '',
     facilityIds: [],
+    active: true
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Update form data when employee prop changes (for edit mode)
+  // Reset form when dialog opens
   useEffect(() => {
-    if (employee) {
-      setFormData(employee);
-    } else {
+    if (open) {
       setFormData({
         name: '',
         phoneNumber: '',
         email: '',
         address: '',
+        dateOfBirth: '',
         gender: 'male',
         accountName: '',
-        role: 'employee',
-        defaultPassword: '',
+        role: roles.length > 0 ? roles[0].id : 0,
+        password: '',
         facilityIds: [],
+        active: true
       });
+      setErrors({});
+      setShowPassword(false);
     }
-  }, [employee, open]);
+  }, [open, roles]);
 
-  const handleChange = (field: keyof EmployeeData, value: any) => {
+  const handleChange = (field: keyof CreateEmployeeFormData, value: any) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -134,6 +146,10 @@ export const EmployeeDialog: React.FC<EmployeeDialogProps> = ({
       newErrors.email = 'Email không hợp lệ';
     }
 
+    if (!formData.dateOfBirth.trim()) {
+      newErrors.dateOfBirth = 'Ngày sinh là bắt buộc';
+    }
+
     if (!formData.address.trim()) {
       newErrors.address = 'Địa chỉ là bắt buộc';
     }
@@ -145,20 +161,70 @@ export const EmployeeDialog: React.FC<EmployeeDialogProps> = ({
       newErrors.accountName = 'Tên tài khoản phải có ít nhất 4 ký tự';
     }
 
-    if (!employee && !formData.defaultPassword.trim()) {
-      newErrors.defaultPassword = 'Mật khẩu là bắt buộc';
-    } else if (!employee && formData.defaultPassword.length < 6) {
-      newErrors.defaultPassword = 'Mật khẩu phải có ít nhất 6 ký tự';
+    if (!formData.password.trim()) {
+      newErrors.password = 'Mật khẩu là bắt buộc';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+    }
+
+    if (formData.facilityIds.length === 0) {
+      newErrors.facilityIds = 'Vui lòng chọn ít nhất một cơ sở làm việc';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
-    if (validateForm()) {
-      onSave(formData);
+  const handleSave = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Find the role name from the role ID
+      const selectedRole = roles.find((r) => r.id === formData.role);
+      if (!selectedRole) {
+        throw new Error('Vai trò không hợp lệ');
+      }
+
+      // Map gender to uppercase
+      const genderMap = {
+        male: 'MALE' as const,
+        female: 'FEMALE' as const,
+        other: 'OTHER' as const,
+      };
+
+      // Prepare the request data
+      const requestData = {
+        userName: formData.accountName,
+        password: formData.password,
+        role: selectedRole.name,
+        facilityIds: formData.facilityIds,
+        fullName: formData.name,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        address: formData.address,
+        dateOfBirth: formData.dateOfBirth,
+        gender: genderMap[formData.gender],
+        active: true
+      };
+
+      // Call the API
+      await createEmployee(requestData);
+
+      // Call parent's onSave callback
+      onSave();
       handleClose();
+    } catch (error: any) {
+      console.error('Failed to create employee:', error);
+      // Show error notification with mapped message
+      if (error instanceof Error) {
+        const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể tạo nhân viên');
+        notifyError(errorMessage);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -168,15 +234,33 @@ export const EmployeeDialog: React.FC<EmployeeDialogProps> = ({
       phoneNumber: '',
       email: '',
       address: '',
+      dateOfBirth: '',
       gender: 'male',
       accountName: '',
-      role: 'employee',
-      defaultPassword: '',
+      role: roles.length > 0 ? roles[0].id : 0,
+      password: '',
       facilityIds: [],
+      active: true
     });
     setErrors({});
     setShowPassword(false);
     onClose();
+  };
+
+  const convertRole = (s: string) => {
+    if (s === 'MANAGER') {
+      return 'Quản Lý';
+    }
+
+    if (s === 'FLORIST') {
+      return 'Thợ Hoa';
+    }
+
+    if (s === 'SALE') {
+      return 'Nhân Viên Kinh Doanh';
+    }
+
+    return 'Nhân Viên';
   };
 
   return (
@@ -196,7 +280,7 @@ export const EmployeeDialog: React.FC<EmployeeDialogProps> = ({
       <DialogTitle sx={{ pb: 1 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {employee ? 'Chỉnh Sửa Nhân Viên' : 'Thêm Nhân Viên Mới'}
+            Thêm Nhân Viên Mới
           </Typography>
           <IconButton onClick={handleClose} size="small">
             <CloseIcon />
@@ -265,6 +349,30 @@ export const EmployeeDialog: React.FC<EmployeeDialogProps> = ({
                   },
                 }}
               />
+
+              {/* Date of Birth */}
+              <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="vi">
+                <DatePicker
+                  label="Ngày Sinh *"
+                  value={formData.dateOfBirth ? dayjs(formData.dateOfBirth) : null}
+                  onChange={(newValue) => {
+                    handleChange('dateOfBirth', newValue ? newValue.format('YYYY-MM-DD') : '');
+                  }}
+                  format="DD/MM/YYYY"
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      error: !!errors.dateOfBirth,
+                      helperText: errors.dateOfBirth,
+                      sx: {
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '8px',
+                        },
+                      },
+                    },
+                  }}
+                />
+              </LocalizationProvider>
 
               {/* Address */}
               <TextField
@@ -337,14 +445,16 @@ export const EmployeeDialog: React.FC<EmployeeDialogProps> = ({
                   onChange={(e) => handleChange('role', e.target.value)}
                   sx={{ borderRadius: '8px' }}
                 >
-                  <MenuItem value="employee">Nhân Viên</MenuItem>
-                  <MenuItem value="manager">Quản Lý</MenuItem>
-                  <MenuItem value="admin">Quản Trị Viên</MenuItem>
+                  {roles.map((role) => (
+                    <MenuItem key={role.id} value={role.id}>
+                      {convertRole(role.name)}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
 
               {/* Facilities Multi-Select */}
-              <FormControl fullWidth>
+              <FormControl fullWidth error={!!errors.facilityIds}>
                 <InputLabel>Cơ Sở Làm Việc *</InputLabel>
                 <Select
                   multiple
@@ -355,7 +465,7 @@ export const EmployeeDialog: React.FC<EmployeeDialogProps> = ({
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((id) => {
-                        const facility = facilities.find((f) => f.id === id);
+                        const facility = facilities?.find((f) => f.id === id);
                         return (
                           <Chip
                             key={id}
@@ -369,24 +479,29 @@ export const EmployeeDialog: React.FC<EmployeeDialogProps> = ({
                     </Box>
                   )}
                 >
-                  {facilities.map((facility) => (
+                  {facilities?.map((facility) => (
                     <MenuItem key={facility.id} value={facility.id}>
                       <Checkbox checked={formData.facilityIds.indexOf(facility.id) > -1} />
                       <ListItemText primary={facility.name} />
                     </MenuItem>
                   ))}
                 </Select>
+                {errors.facilityIds && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
+                    {errors.facilityIds}
+                  </Typography>
+                )}
               </FormControl>
 
-              {/* Default Password */}
+              {/* Password */}
               <TextField
-                label={employee ? 'Mật Khẩu Mới (để trống nếu không đổi)' : 'Mật Khẩu Mặc Định *'}
+                label="Mật Khẩu Mặc Định *"
                 type={showPassword ? 'text' : 'password'}
                 fullWidth
-                value={formData.defaultPassword}
-                onChange={(e) => handleChange('defaultPassword', e.target.value)}
-                error={!!errors.defaultPassword}
-                helperText={errors.defaultPassword || 'Tối thiểu 6 ký tự'}
+                value={formData.password}
+                onChange={(e) => handleChange('password', e.target.value)}
+                error={!!errors.password}
+                helperText={errors.password || 'Tối thiểu 6 ký tự'}
                 placeholder="••••••••"
                 slotProps={{
                   input: {
@@ -417,6 +532,7 @@ export const EmployeeDialog: React.FC<EmployeeDialogProps> = ({
         <Button
           onClick={handleClose}
           variant="outlined"
+          disabled={loading}
           sx={{
             borderRadius: '8px',
             textTransform: 'none',
@@ -428,14 +544,15 @@ export const EmployeeDialog: React.FC<EmployeeDialogProps> = ({
         <Button
           onClick={handleSave}
           variant="contained"
-          startIcon={<SaveIcon />}
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
           sx={{
             borderRadius: '8px',
             textTransform: 'none',
             px: 3,
           }}
         >
-          {employee ? 'Cập Nhật' : 'Lưu'}
+          Lưu
         </Button>
       </DialogActions>
     </Dialog>
