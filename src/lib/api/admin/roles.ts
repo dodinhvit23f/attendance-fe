@@ -1,4 +1,5 @@
 import {STORAGE_KEYS} from '@/lib/constants/storage';
+import { ApiErrorResponse, getErrorCode } from '../types';
 
 // Types
 export interface Role {
@@ -39,8 +40,8 @@ export const getRoles = async (): Promise<GetRolesResponse> => {
       (unauthorizedError as any).status = 401;
       throw unauthorizedError;
     }
-    const error = await response.json();
-    throw new Error(error.errorCodes?.[0] || 'Failed to fetch roles');
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to fetch roles'));
   }
 
   return response.json();

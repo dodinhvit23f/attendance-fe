@@ -1,4 +1,5 @@
 import {STORAGE_KEYS} from "@/lib/constants";
+import { ApiErrorResponse, getErrorCode } from '../types';
 
 export interface ManagerFacility {
   id: number;
@@ -44,8 +45,8 @@ export const getManagerFacilities = async (): Promise<GetManagerFacilitiesRespon
       (unauthorizedError as any).status = 401;
       throw unauthorizedError;
     }
-    const error = await response.json();
-    throw new Error(error.errorCodes?.[0] || 'Failed to fetch facilities');
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to fetch facilities'));
   }
 
   return response.json();

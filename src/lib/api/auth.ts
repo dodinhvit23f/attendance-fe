@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from '@/lib/constants/storage';
+import { ApiErrorResponse, getErrorCode } from './types';
 
 interface LoginRequest {
   username: string;
@@ -67,9 +68,8 @@ export const loginApi = async (
   });
 
   if (!response.ok) {
-    const error = await response.json()
-
-    throw new Error(error.errorCodes[0]);
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error));
   }
 
   return response.json();
@@ -94,13 +94,8 @@ export const otpLoginApi = async (otp: string): Promise<OtpLoginResponse> => {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    const errorCode =  error.errorCodes?.[0]
-    errorCode
-    if(errorCode){
-      throw new Error(error.errorCodes?.[0] || 'OTP verification failed');
-    }
-
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'OTP verification failed'));
   }
 
   return response.json();
@@ -125,8 +120,8 @@ export const otpGenerateApi = async (): Promise<OtpGenerateResponse> => {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.errorCodes?.[0] || 'OTP generation failed');
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'OTP generation failed'));
   }
 
   return response.json();
@@ -157,8 +152,8 @@ export const otpVerifyApi = async (otp: string): Promise<OtpVerifyResponse> => {
       (unauthorizedError as any).status = 401;
       throw unauthorizedError;
     }
-    const error = await response.json();
-    throw new Error(error.errorCodes?.[0] || 'OTP verification failed');
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'OTP verification failed'));
   }
 
   return response.json();

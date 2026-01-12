@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from '@/lib/constants/storage';
+import { ApiErrorResponse, getErrorCode } from '../types';
 
 // Facility Types
 export interface Facility {
@@ -112,8 +113,8 @@ export const createFacility = async (
       (unauthorizedError as any).status = 401;
       throw unauthorizedError;
     }
-    const error = await response.json();
-    throw new Error(error.errorCodes?.[0] || 'Failed to create facility');
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to create facility'));
   }
 
   return response.json();
@@ -153,8 +154,8 @@ export const updateFacility = async (
       (unauthorizedError as any).status = 401;
       throw unauthorizedError;
     }
-    const error = await response.json();
-    throw new Error(error.errorCodes?.[0] || 'Failed to update facility');
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to update facility'));
   }
 
   return response.json();
@@ -197,8 +198,8 @@ export const getFacilities = async (
       (unauthorizedError as any).status = 401;
       throw unauthorizedError;
     }
-    const error = await response.json();
-    throw new Error(error.errorCodes?.[0] || 'Failed to fetch facilities');
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to fetch facilities'));
   }
 
   return response.json();
@@ -238,12 +239,12 @@ export const toggleFacilityStatus = async (
       (unauthorizedError as any).status = 401;
       throw unauthorizedError;
     }
-    const error = await response.json();
-    const errorCode = error.errorCodes?.[0];
-    if (errorCode === 'ERROR_024') {
+    const error: ApiErrorResponse = await response.json();
+    const errorCode = getErrorCode(error, 'Failed to update facility status');
+    if (error.errorCodes?.[0] === 'ERROR_024') {
       throw new Error('Không tìm thấy cơ sở');
     }
-    throw new Error(errorCode || 'Failed to update facility status');
+    throw new Error(errorCode);
   }
 
   return response.json();
@@ -277,8 +278,8 @@ export const getFacilitiesLight = async (): Promise<GetFacilitiesLightResponse> 
       (unauthorizedError as any).status = 401;
       throw unauthorizedError;
     }
-    const error = await response.json();
-    throw new Error(error.errorCodes?.[0] || 'Failed to fetch facilities');
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to fetch facilities'));
   }
 
   return response.json();

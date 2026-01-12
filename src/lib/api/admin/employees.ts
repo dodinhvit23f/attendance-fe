@@ -1,4 +1,5 @@
 import {STORAGE_KEYS} from '@/lib/constants/storage';
+import { ApiErrorResponse, getErrorCode } from '../types';
 
 // Types
 export interface Employee {
@@ -150,8 +151,8 @@ export const getEmployees = async (
       (unauthorizedError as any).status = 401;
       throw unauthorizedError;
     }
-    const error = await response.json();
-    throw new Error(error.errorCodes?.[0] || 'Failed to fetch employees');
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to fetch employees'));
   }
 
   return response.json();
@@ -188,8 +189,8 @@ export const getEmployee = async (
       (unauthorizedError as any).status = 401;
       throw unauthorizedError;
     }
-    const error = await response.json();
-    throw new Error(error.errorCodes?.[0] || 'Failed to fetch employee');
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to fetch employee'));
   }
 
   return response.json();
@@ -227,8 +228,8 @@ export const createEmployee = async (
       (unauthorizedError as any).status = 401;
       throw unauthorizedError;
     }
-    const error = await response.json();
-    throw new Error(error.errorCodes?.[0] || 'Failed to create employee');
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to create employee'));
   }
 
   return response.json();
@@ -278,8 +279,8 @@ export const updateEmployeeStatus = async (
       (unauthorizedError as any).status = 401;
       throw unauthorizedError;
     }
-    const error = await response.json();
-    throw new Error(error.errorCodes?.[0] || 'Failed to update employee status');
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to update employee status'));
   }
 
   return response.json();
@@ -319,8 +320,8 @@ export const updateEmployee = async (
       (unauthorizedError as any).status = 401;
       throw unauthorizedError;
     }
-    const error = await response.json();
-    throw new Error(error.errorCodes?.[0] || 'Failed to update employee');
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to update employee'));
   }
 
   return response.json();
@@ -354,8 +355,8 @@ export const getActiveEmployees = async (): Promise<GetActiveEmployeesResponse> 
       (unauthorizedError as any).status = 401;
       throw unauthorizedError;
     }
-    const error = await response.json();
-    throw new Error(error.errorCodes?.[0] || 'Failed to fetch active employees');
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to fetch active employees'));
   }
 
   return response.json();

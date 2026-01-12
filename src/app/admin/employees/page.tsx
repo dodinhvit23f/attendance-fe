@@ -23,7 +23,7 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
-import { CreateEmployeeDialog, UpdateEmployeeDialog, UpdateEmployeeData, Facility } from '@/components/admin';
+import { CreateEmployeeDialog, UpdateEmployeeDialog, UpdateEmployeeData} from '@/components/admin';
 import { useEffect } from 'react';
 import { useLoading } from '@/components/root/client-layout';
 import { getEmployees, Employee, updateEmployeeStatus } from '@/lib/api/admin/employees';
@@ -31,14 +31,6 @@ import { getRoles, type Role } from '@/lib/api/admin/roles';
 import { FacilityLight, getFacilitiesLight } from '@/lib/api/admin/facilities';
 import { useNotify } from '@/components/notification/NotificationProvider';
 import { ErrorMessage } from '@/lib/constants';
-
-// Mock facilities data
-const mockFacilities: Facility[] = [
-  { id: 1, name: 'Văn phòng Hà Nội' },
-  { id: 2, name: 'Chi nhánh Hồ Chí Minh' },
-  { id: 3, name: 'Văn phòng Đà Nẵng' },
-  { id: 4, name: 'Chi nhánh Cần Thơ' },
-];
 
 export default function EmployeesPage() {
   const { setLoading } = useLoading();

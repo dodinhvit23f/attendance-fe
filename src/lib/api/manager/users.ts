@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from '@/lib/constants/storage';
+import { ApiErrorResponse, getErrorCode } from '../types';
 
 // Types
 export interface ManagerEmployee {
@@ -70,8 +71,8 @@ export const getManagerUsers = async (
       (unauthorizedError as any).status = 401;
       throw unauthorizedError;
     }
-    const error = await response.json();
-    throw new Error(error.errorCodes?.[0] || 'Failed to fetch users');
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to fetch users'));
   }
 
   return response.json();

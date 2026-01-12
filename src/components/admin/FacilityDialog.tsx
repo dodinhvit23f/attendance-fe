@@ -211,7 +211,7 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
 
       const data = await response.json();
 
-      if (data && data.length > 0) {
+      if (data && Array.isArray(data)) {
         const location = data[0];
         setFormData((prev) => ({
           ...prev,
