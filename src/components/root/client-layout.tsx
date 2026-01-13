@@ -1,10 +1,11 @@
 "use client"
 import * as React from "react";
-import {createContext, useContext, useEffect, useState} from "react";
+import {createContext, useContext, useState} from "react";
 import {Box, CssBaseline, ThemeProvider} from "@mui/material";
 
 import {LoadingScreen} from "@/components/auth/LoadingScreen/loading-screen";
 import {NotificationProvider} from "@/components/notification/NotificationProvider";
+import {AuthProvider} from "@/components/auth/AuthProvider";
 import {createTheme} from "@mui/material/styles";
 
 
@@ -68,16 +69,18 @@ export default function ClientLayout({children}: { children: React.ReactNode; })
       <ThemeProvider theme={theme}>
         <NotificationProvider>
           <LoadingContext.Provider value={{isLoading, setLoading}}>
-            <CssBaseline/>
-            <Box
-              sx={{
-                minHeight: '100vh',
-                background: 'linear-gradient(151deg, #ffffff 0%, #fff5f5 30%, #fdfdfd 55%, #ebebeb 80%, #F1F1F1 100%)',
-              }}
-            >
-              {isLoading ? <LoadingScreen/> : <></>}
-              {children}
-            </Box>
+            <AuthProvider>
+              <CssBaseline/>
+              <Box
+                sx={{
+                  minHeight: '100vh',
+                  background: 'linear-gradient(151deg, #ffffff 0%, #fff5f5 30%, #fdfdfd 55%, #ebebeb 80%, #F1F1F1 100%)',
+                }}
+              >
+                {isLoading ? <LoadingScreen/> : <></>}
+                {children}
+              </Box>
+            </AuthProvider>
           </LoadingContext.Provider>
         </NotificationProvider>
       </ThemeProvider>

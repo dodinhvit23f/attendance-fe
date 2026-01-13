@@ -1,6 +1,65 @@
 import { STORAGE_KEYS } from '@/lib/constants/storage';
 import { ApiErrorResponse, getErrorCode } from './types';
 
+interface RefreshTokenResponse {
+  traceId: string;
+  data: {
+    accessToken: string;
+    refreshToken: string;
+  };
+}
+
+export const verifyTokenApi = async (): Promise<boolean> => {
+  const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+
+  if (!accessToken) {
+    return false;
+  }
+
+  const response = await fetch(process.env.NEXT_PUBLIC_API_VERIFY_TOKEN!, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  return response.ok;
+};
+
+export const refreshTokenApi = async (): Promise<RefreshTokenResponse> => {
+  const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+
+  if (!refreshToken) {
+    const error = new Error('Refresh token not found');
+    (error as any).status = 401;
+    throw error;
+  }
+
+  const response = await fetch(process.env.NEXT_PUBLIC_API_REFRESH_TOKEN!, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${refreshToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = new Error('Token refresh failed');
+    (error as any).status = response.status;
+    throw error;
+  }
+
+  return response.json();
+};
+
+export const clearAuthStorage = () => {
+  localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+  localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+  localStorage.removeItem(STORAGE_KEYS.ROLES);
+  localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
+};
+
 interface LoginRequest {
   username: string;
   password: string;
