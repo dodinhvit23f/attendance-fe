@@ -29,8 +29,9 @@ import DownloadIcon from '@mui/icons-material/Download';
 import PrintIcon from '@mui/icons-material/Print';
 import QRCode from 'react-qr-code';
 import { useEffect, useState, useCallback } from 'react';
+import dayjs from 'dayjs';
 import { getManagerFacilities, ManagerFacility } from '@/lib/api/manager/facilities';
-import { recordAttendance } from '@/lib/api/manager/attendance';
+import { recordAttendance, getManagerAttendances, Attendance } from '@/lib/api/manager/attendance';
 import { useNotify } from '@/components/notification/NotificationProvider';
 import { MapPicker } from '@/components/admin/MapPicker';
 import { useLoading } from "@/components/root/client-layout";
@@ -68,10 +69,27 @@ export default function ManagerAttendancesPage() {
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [openQRDialog, setOpenQRDialog] = useState(false);
   const [facilities, setFacilities] = useState<ManagerFacility[]>([]);
+  const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const { setLoading } = useLoading();
 
-  // Fetch facilities
+  // Fetch attendances
+  const fetchAttendances = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await getManagerAttendances(startDate, endDate);
+      if (response.data?.attendances) {
+        setAttendances(response.data.attendances);
+      }
+    } catch (error) {
+      console.error('Failed to fetch attendances:', error);
+      notifyError('Không thể tải dữ liệu chấm công');
+    } finally {
+      setLoading(false);
+    }
+  }, [startDate, endDate]);
+
+  // Fetch facilities and attendances on page load
   useEffect(() => {
     const fetchFacilities = async () => {
       try {
@@ -85,8 +103,8 @@ export default function ManagerAttendancesPage() {
     };
 
     fetchFacilities();
-    setLoading(false)
-  }, []);
+    fetchAttendances();
+  }, [fetchAttendances]);
 
   // Check if user is within range of any facility
   const facilityInRange = userLocation
@@ -366,19 +384,43 @@ export default function ManagerAttendancesPage() {
               <TableCell sx={{ fontWeight: 600 }}>Ngày</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Giờ Vào</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Giờ Ra</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Trạng Thái</TableCell>
+             {/* <TableCell sx={{ fontWeight: 600 }}>Trạng Thái</TableCell>*/}
             </TableRow>
           </TableHead>
           <TableBody>
-            <TableRow>
-              <TableCell colSpan={6} sx={{ border: 0 }}>
-                <Box sx={{ textAlign: 'center', py: 8 }}>
-                  <Typography variant="h6" color="text.secondary" gutterBottom>
-                    Chưa có dữ liệu
-                  </Typography>
-                </Box>
-              </TableCell>
-            </TableRow>
+            {attendances.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} sx={{ border: 0 }}>
+                  <Box sx={{ textAlign: 'center', py: 8 }}>
+                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                      Chưa có dữ liệu
+                    </Typography>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ) : (
+              attendances.map((attendance) => (
+                <TableRow key={attendance.id}>
+                  <TableCell>{attendance.id}</TableCell>
+                  <TableCell>{attendance.fullName}</TableCell>
+                  <TableCell>{attendance.checkInDate}</TableCell>
+                  <TableCell>{dayjs(attendance.checkIn).format('HH:mm')}</TableCell>
+                  <TableCell>
+                    {attendance.checkOut ? dayjs(attendance.checkOut).format('HH:mm') : '-'}
+                  </TableCell>
+                  {/*<TableCell>
+                    <Typography
+                      sx={{
+                        color: attendance.checkOut ? 'success.main' : 'warning.main',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {attendance.checkOut ? 'Đã hoàn thành' : 'Đang làm việc'}
+                    </Typography>
+                  </TableCell>*/}
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
