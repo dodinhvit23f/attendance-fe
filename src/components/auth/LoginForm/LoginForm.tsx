@@ -41,6 +41,7 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
         return
       }
       router.push("/auth/qr/verify")
+      return;
     })
     .catch((reason) => {
       notifyError(ErrorMessage.getMessage(reason.message, 'Tài khoản đăng nhập hoặc mật khẩu không đúng'))

@@ -17,7 +17,7 @@ export default function QRGeneratorPage() {
   const [qrData, setQrData] = useState<string>('');
 
   useEffect(() => {
-    const fetchQrData = async () => {
+    const fetchQrData = () => {
       // Check if OTP_TOKEN exists
       const otpToken = localStorage.getItem(STORAGE_KEYS.OTP_TOKEN);
 
@@ -27,27 +27,34 @@ export default function QRGeneratorPage() {
         return;
       }
 
-      try {
-        setLoading(true);
+      setLoading(true);
 
-        // Call API to generate OTP QR code
-        const response = await otpGenerateApi();
-        // Set the QR data (otpauth URL)
-        setQrData(response.data);
-      } catch (error) {
+      // Call API to generate OTP QR code
+      otpGenerateApi()
+        .then((response) => {
+          // Set the QR data (otpauth URL)
+          setQrData(response.data);
+        })
+        .catch((error) => {
+          if (error instanceof Error) {
+            if (error.message == "ERROR_AUTH_004") {
+              notifyError('Hết thời gian nhập OTP. Vui lòng đăng nhập lại.');
+              router.push('/');
+              localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
+              return;
+            }
 
-        if (error instanceof Error) {
-          notifyError('Không thể tạo mã QR. Vui lòng thử lại.');
-          if (error.message == "ERROR_AUTH_011") {
-            router.push('/');
-            localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
-            return
+            if (error.message == "ERROR_AUTH_011" || error.message == "ERROR_AUTH_004") {
+              notifyError('Không thể tạo mã QR. Vui lòng đăng nhập lại.');
+              router.push('/');
+              localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
+              return;
+            }
           }
-        }
-
-      } finally {
-        setLoading(false);
-      }
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     };
 
     fetchQrData();
