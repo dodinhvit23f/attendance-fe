@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 
 export function DevToolsBlocker() {
-  /*useEffect(() => {
+  useEffect(() => {
     // Only run in production
     if (process.env.NODE_ENV !== 'production') {
       return;
@@ -106,7 +106,7 @@ export function DevToolsBlocker() {
       document.removeEventListener('keydown', handleKeyDown);
       clearInterval(devToolsInterval);
     };
-  }, []);*/
+  }, []);
 
   return null;
 }
