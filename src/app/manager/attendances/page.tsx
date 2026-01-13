@@ -18,13 +18,23 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  IconButton,
+  Tooltip,
+  Divider,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import QrCode2Icon from '@mui/icons-material/QrCode2';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DownloadIcon from '@mui/icons-material/Download';
+import PrintIcon from '@mui/icons-material/Print';
+import QRCode from 'react-qr-code';
 import { useEffect, useState, useCallback } from 'react';
 import { getManagerFacilities, ManagerFacility } from '@/lib/api/manager/facilities';
+import { recordAttendance } from '@/lib/api/manager/attendance';
 import { useNotify } from '@/components/notification/NotificationProvider';
 import { MapPicker } from '@/components/admin/MapPicker';
-import {useLoading} from "@/components/root/client-layout";
+import { useLoading } from "@/components/root/client-layout";
+import { QRScannerInline } from '@/components/qr/QRScannerInline';
 
 const getDateString = (date: Date) => {
   return date.toISOString().split('T')[0];
@@ -51,10 +61,12 @@ export default function ManagerAttendancesPage() {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const { notifyError } = useNotify();
+  const { notifyError, notifySuccess } = useNotify();
   const [startDate, setStartDate] = useState(getDateString(today));
   const [endDate, setEndDate] = useState(getDateString(tomorrow));
   const [openDialog, setOpenDialog] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [openQRDialog, setOpenQRDialog] = useState(false);
   const [facilities, setFacilities] = useState<ManagerFacility[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const { setLoading } = useLoading();
@@ -135,6 +147,161 @@ export default function ManagerAttendancesPage() {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setUserLocation(null);
+    setShowQRScanner(false);
+  };
+
+  const handleShowQRScanner = () => {
+    setShowQRScanner(true);
+  };
+
+  const handleBackFromScanner = () => {
+    setShowQRScanner(false);
+  };
+
+  const handleOpenQRDialog = () => {
+    setOpenQRDialog(true);
+  };
+
+  const handleCloseQRDialog = () => {
+    setOpenQRDialog(false);
+  };
+
+  const handleCopyQR = async (facilityId: number) => {
+    const qrValue = facilityId.toString();
+    try {
+      await navigator.clipboard.writeText(qrValue);
+      notifySuccess('Đã sao chép mã QR!');
+    } catch {
+      notifyError('Không thể sao chép mã QR.');
+    }
+  };
+
+  const handleDownloadQR = (facilityId: number, facilityName: string) => {
+    const svg = document.getElementById(`qr-${facilityId}`);
+    if (!svg) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      const pngFile = canvas.toDataURL('image/png');
+
+      const downloadLink = document.createElement('a');
+      downloadLink.download = `QR-${facilityName}.png`;
+      downloadLink.href = pngFile;
+      downloadLink.click();
+    };
+
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  };
+
+  const handlePrintQR = (facilityId: number, facilityName: string) => {
+    const svg = document.getElementById(`qr-${facilityId}`);
+    if (!svg) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>QR Code - ${facilityName}</title>
+          <style>
+            body {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              margin: 0;
+              font-family: Arial, sans-serif;
+            }
+            h2 { margin-bottom: 20px; }
+            svg {
+              width: 250px;
+              height: 250px;
+            }
+          </style>
+        </head>
+        <body>
+          <h2>${facilityName}</h2>
+          ${svgData}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  };
+
+  const handleQRScan = async (scannedData: string) => {
+    // Parse QR data as JSON (facility object)
+    let scannedFacility: ManagerFacility | null = null;
+    try {
+      scannedFacility = JSON.parse(scannedData) as ManagerFacility;
+    } catch {
+      notifyError('Mã QR không hợp lệ. Vui lòng thử lại.');
+      setShowQRScanner(false);
+      return;
+    }
+
+    // Find matching facility from the list
+    const matchedFacility = facilities.find(
+      (facility) => facility.id === scannedFacility?.id
+    );
+
+    if (!matchedFacility) {
+      notifyError('Mã QR không khớp với cơ sở nào. Vui lòng thử lại.');
+      setShowQRScanner(false);
+      return;
+    }
+
+    if (!userLocation) {
+      notifyError('Không thể xác định vị trí của bạn.');
+      setShowQRScanner(false);
+      return;
+    }
+
+    // Check if user is within range of the matched facility
+    const distance = calculateDistance(
+      userLocation.lat,
+      userLocation.lng,
+      matchedFacility.latitude,
+      matchedFacility.longitude
+    );
+
+    if (distance > matchedFacility.allowDistance) {
+      notifyError(
+        `Bạn đang ở ngoài phạm vi cho phép của ${matchedFacility.name}. Khoảng cách: ${Math.round(distance)}m`
+      );
+      setShowQRScanner(false);
+      return;
+    }
+
+    // Call API to record attendance
+    try {
+      setLoading(true);
+      await recordAttendance({
+        latitude: userLocation.lat,
+        longitude: userLocation.lng,
+        facilityId: matchedFacility.id,
+      });
+      notifySuccess('Chấm công thành công!');
+      handleCloseDialog();
+    } catch (error) {
+      console.error('Failed to record attendance:', error);
+      notifyError('Không thể ghi nhận chấm công. Vui lòng thử lại.');
+      setShowQRScanner(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -149,14 +316,24 @@ export default function ManagerAttendancesPage() {
         <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
           Quản Lý Chấm Công
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleOpenDialog}
-          sx={{ borderRadius: '8px' }}
-        >
-          Chấm công
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="outlined"
+            startIcon={<QrCode2Icon />}
+            onClick={handleOpenQRDialog}
+            sx={{ borderRadius: '8px' }}
+          >
+            Mã QR Cơ Sở
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleOpenDialog}
+            sx={{ borderRadius: '8px' }}
+          >
+            Chấm công
+          </Button>
+        </Stack>
       </Stack>
 
       {/* Filters */}
@@ -208,9 +385,13 @@ export default function ManagerAttendancesPage() {
 
       {/* Attendance Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>Chấm công</DialogTitle>
+        <DialogTitle>
+          {showQRScanner ? 'Quét Mã QR' : 'Chấm công'}
+        </DialogTitle>
         <DialogContent>
-          {!userLocation ? (
+          {showQRScanner ? (
+            <QRScannerInline onScan={handleQRScan} />
+          ) : !userLocation ? (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <Typography color="text.secondary">
                 Đang chờ quyền truy cập vị trí...
@@ -295,13 +476,116 @@ export default function ManagerAttendancesPage() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Đóng</Button>
-          <Button
-            variant="contained"
-            disabled={!userLocation || !facilityInRange}
-          >
-            Xác nhận chấm công
-          </Button>
+          {showQRScanner ? (
+            <Button onClick={handleBackFromScanner}>Quay lại</Button>
+          ) : (
+            <>
+              <Button onClick={handleCloseDialog}>Đóng</Button>
+              <Button
+                variant="contained"
+                disabled={!userLocation || !facilityInRange}
+                onClick={handleShowQRScanner}
+              >
+                Xác nhận chấm công
+              </Button>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Facilities QR Codes Dialog */}
+      <Dialog open={openQRDialog} onClose={handleCloseQRDialog} maxWidth="md" fullWidth>
+        <DialogTitle>Mã QR Các Cơ Sở</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            {facilities.map((facility, index) => (
+              <Box key={facility.id}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={3}
+                  alignItems={{ xs: 'center', sm: 'flex-start' }}
+                >
+                  {/* QR Code */}
+                  <Box
+                    sx={{
+                      p: 2,
+                      backgroundColor: '#fff',
+                      borderRadius: '12px',
+                      border: '1px solid #E0E0E0',
+                    }}
+                  >
+                    <QRCode
+                      id={`qr-${facility.id}`}
+                      value={JSON.stringify(facility)}
+                      size={150}
+                    />
+                  </Box>
+
+                  {/* Facility Info & Actions */}
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                      {facility.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      {facility.address}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Mã cơ sở: {facility.id}
+                    </Typography>
+
+                    {/* Action Icons */}
+                    <Stack direction="row" spacing={1}>
+                      <Tooltip title="Sao chép mã">
+                        <IconButton
+                          onClick={() => handleCopyQR(facility.id)}
+                          sx={{
+                            border: '1px solid #E0E0E0',
+                            borderRadius: '8px',
+                          }}
+                        >
+                          <ContentCopyIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Tải xuống">
+                        <IconButton
+                          onClick={() => handleDownloadQR(facility.id, facility.name)}
+                          sx={{
+                            border: '1px solid #E0E0E0',
+                            borderRadius: '8px',
+                          }}
+                        >
+                          <DownloadIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="In">
+                        <IconButton
+                          onClick={() => handlePrintQR(facility.id, facility.name)}
+                          sx={{
+                            border: '1px solid #E0E0E0',
+                            borderRadius: '8px',
+                          }}
+                        >
+                          <PrintIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </Box>
+                </Stack>
+                {index < facilities.length - 1 && <Divider sx={{ mt: 3 }} />}
+              </Box>
+            ))}
+
+            {facilities.length === 0 && (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography color="text.secondary">
+                  Chưa có cơ sở nào
+                </Typography>
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseQRDialog}>Đóng</Button>
         </DialogActions>
       </Dialog>
     </Box>
