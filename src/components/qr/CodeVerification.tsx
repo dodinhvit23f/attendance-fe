@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, KeyboardEvent, ChangeEvent } from 'react';
-import { Stack, TextField, Button, Typography, useTheme } from '@mui/material';
+import {Stack, TextField, Button, Typography, useTheme, Link} from '@mui/material';
 import { CheckCircle } from '@mui/icons-material';
 
 interface CodeVerificationProps {
@@ -177,7 +177,19 @@ export const CodeVerification: React.FC<CodeVerificationProps> = ({
           },
         }}
       >
-        Không nhận được mã? Quét lại QR
+        <Link
+            href="/"
+            underline="hover"
+            sx={{
+              color: theme.palette.text.secondary,
+              fontSize: '14px',
+              cursor: 'pointer',
+              textUnderlineOffset: '4px',
+            }}
+        >
+          Quay lại trang chủ
+        </Link>
+
       </Typography>
 
       {/* Confirm Button */}
