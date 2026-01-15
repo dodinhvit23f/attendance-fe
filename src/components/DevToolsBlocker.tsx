@@ -66,9 +66,10 @@ export function DevToolsBlocker() {
       }
     };
 
-    // Detect DevTools using timing attack
+    // Detect DevTools using timing attack (desktop only)
     const detectDevTools = () => {
-      const threshold = 160;
+
+      const threshold = 240;
       const widthThreshold = window.outerWidth - window.innerWidth > threshold;
       const heightThreshold = window.outerHeight - window.innerHeight > threshold;
 
