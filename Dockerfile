@@ -1,7 +1,7 @@
 # ------------------------------
 # Stage 1: Dependencies
 # ------------------------------
-FROM node:20-alpine AS deps
+FROM node:20-slim AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -12,7 +12,7 @@ RUN npm ci --frozen-lockfile
 # ------------------------------
 # Stage 2: Build the Next.js app
 # ------------------------------
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
 
 # Copy dependencies from deps stage

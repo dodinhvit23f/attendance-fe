@@ -120,6 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Protected routes - check authentication
+
       const isValid = await checkAuth();
 
       if (!isValid) {

@@ -18,7 +18,7 @@ const NAVIGATION: Navigation = [
     icon: <DashboardIcon />,
   },
   {
-    segment: 'user/attendance',
+    segment: 'user/attendances',
     title: 'Chấm Công',
     icon: <AssignmentIcon />,
   },
