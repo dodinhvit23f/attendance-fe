@@ -29,9 +29,9 @@ import DownloadIcon from '@mui/icons-material/Download';
 import PrintIcon from '@mui/icons-material/Print';
 import QRCode from 'react-qr-code';
 import { useEffect, useState, useCallback } from 'react';
-import dayjs from 'dayjs';
 import { getManagerFacilities, ManagerFacility } from '@/lib/api/manager/facilities';
 import { recordAttendance, getManagerAttendances, Attendance } from '@/lib/api/manager/attendance';
+import { parseDate, parseDateTime } from '@/lib/api/types';
 import { useNotify } from '@/components/notification/NotificationProvider';
 import { MapPicker } from '@/components/admin/MapPicker';
 import { useLoading } from "@/components/root/client-layout";
@@ -403,10 +403,10 @@ export default function ManagerAttendancesPage() {
                 <TableRow key={attendance.id}>
                   <TableCell>{attendance.id}</TableCell>
                   <TableCell>{attendance.fullName}</TableCell>
-                  <TableCell>{attendance.checkInDate}</TableCell>
-                  <TableCell>{dayjs(attendance.checkIn).format('HH:mm')}</TableCell>
+                  <TableCell>{parseDate(attendance.checkInDate).format('DD/MM/YYYY')}</TableCell>
+                  <TableCell>{parseDateTime(attendance.checkIn).format('HH:mm')}</TableCell>
                   <TableCell>
-                    {attendance.checkOut ? dayjs(attendance.checkOut).format('HH:mm') : '-'}
+                    {attendance.checkOut ? parseDateTime(attendance.checkOut).format('HH:mm') : '-'}
                   </TableCell>
                   {/*<TableCell>
                     <Typography

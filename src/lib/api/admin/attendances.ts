@@ -1,13 +1,13 @@
 import { STORAGE_KEYS } from '@/lib/constants/storage';
-import { ApiErrorResponse, getErrorCode } from '../types';
+import { ApiErrorResponse, formatDateWithTimezone, getErrorCode } from '../types';
 
 export interface Attendance {
   id: number;
   employeeId: string;
   fullName: string;
-  checkInTime: string | null;
-  checkOutTime: string | null;
-  date: string;
+  checkInDate: string;
+  checkIn: string | null;
+  checkOut: string | null;
   status: string;
   duration: string | null;
 }
@@ -34,8 +34,8 @@ export const getAttendances = async (params: GetAttendancesParams): Promise<GetA
   }
 
   const queryParams = new URLSearchParams();
-  queryParams.append('startDate', params.startDate);
-  queryParams.append('endDate', params.endDate);
+  queryParams.append('startDate', formatDateWithTimezone(params.startDate));
+  queryParams.append('endDate', formatDateWithTimezone(params.endDate));
   if (params.userNames) {
     queryParams.append('userNames', params.userNames);
   }

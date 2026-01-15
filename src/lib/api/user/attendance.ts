@@ -1,5 +1,5 @@
 import { STORAGE_KEYS } from '@/lib/constants';
-import { ApiErrorResponse, getErrorCode } from '../types';
+import { ApiErrorResponse, formatDateWithTimezone, getErrorCode } from '../types';
 
 export interface UserAttendance {
   id: number;
@@ -85,8 +85,8 @@ export const getUserAttendances = async (
   }
 
   const url = new URL(process.env.NEXT_PUBLIC_API_USER_ATTENDANCES!);
-  url.searchParams.append('startDate', startDate);
-  url.searchParams.append('endDate', endDate);
+  url.searchParams.append('startDate', formatDateWithTimezone(startDate));
+  url.searchParams.append('endDate', formatDateWithTimezone(endDate));
 
   const response = await fetch(url.toString(), {
     method: 'GET',
