@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Solpyra Attendance is a Next.js 15 attendance/check-in application with role-based access control (Admin, Manager, User). It deploys to Cloudflare Workers via OpenNext.js.
 
+## Claude Model Roles
+
+- **Opus** - Planning, reasoning, architecture design
+- **Sonnet** - Execution, refactoring, implementation
+
 ## Build & Development Commands
 
 ```bash
