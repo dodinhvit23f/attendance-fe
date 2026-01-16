@@ -3,13 +3,11 @@ import { ApiErrorResponse, formatDateWithTimezone, getErrorCode } from '../types
 
 export interface Attendance {
   id: number;
-  employeeId: string;
+  userName: string;
   fullName: string;
   checkInDate: string;
-  checkIn: string | null;
-  checkOut: string | null;
-  status: string;
-  duration: string | null;
+  checkIn: string;
+  checkOut?: string | null;
 }
 
 export interface GetAttendancesParams {
@@ -18,9 +16,17 @@ export interface GetAttendancesParams {
   userNames?: string; // Comma-separated usernames
 }
 
+export interface AttendancesData {
+  page: number;
+  totalPages: number;
+  totalElements: number;
+  pageSize: number;
+  attendances: Attendance[];
+}
+
 export interface GetAttendancesResponse {
   traceId: string;
-  data: Attendance[];
+  data: AttendancesData;
 }
 
 /**

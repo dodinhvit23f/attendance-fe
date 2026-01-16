@@ -79,6 +79,7 @@ const getStatusIcon = (status: string) => {
 };
 
 export default function AttendancesPage() {
+
   const { setLoading } = useLoading();
   const { notifySuccess, notifyError } = useNotify();
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,8 +88,8 @@ export default function AttendancesPage() {
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [activeEmployees, setActiveEmployees] = useState<ActiveEmployee[]>([]);
   const [selectedUserNames, setSelectedUserNames] = useState<string[]>([]);
-  const [startDate, setStartDate] = useState(dayjs().format('YYYY-MM-DD'));
-  const [endDate, setEndDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DD'));
+  const [startDate, setStartDate] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
+  const [endDate, setEndDate] = useState(dayjs().endOf('month').format('YYYY-MM-DD'));
 
   // Fetch active employees
   useEffect(() => {
@@ -117,11 +118,9 @@ export default function AttendancesPage() {
         endDate,
         userNames: selectedUserNames.length > 0 ? selectedUserNames.join(',') : undefined,
       });
-      // Ensure response.data is an array before setting
-      if (Array.isArray(response.data)) {
-        setAttendances(response.data);
+      if (response.data?.attendances) {
+        setAttendances(response.data.attendances);
       } else {
-        console.error('Invalid response format: data is not an array', response);
         setAttendances([]);
       }
     } catch (error: any) {
@@ -155,14 +154,6 @@ export default function AttendancesPage() {
     // TODO: Send imageData to backend for attendance verification
   };
 
-  const filteredAttendances = attendances.filter((attendance) => {
-    const matchesSearch = attendance.fullName
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      statusFilter === 'all' || attendance.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
 
   const handleUserNameChange = (event: any) => {
     const value = event.target.value;
@@ -269,7 +260,7 @@ export default function AttendancesPage() {
       </Stack>
 
       {/* Statistics Cards */}
-      <Stack direction="row" spacing={2} mb={3}>
+      { /*<Stack direction="row" spacing={2} mb={3}>
         <Paper
           elevation={2}
           sx={{
@@ -332,7 +323,7 @@ export default function AttendancesPage() {
             </Typography>
           </Box>
         </Paper>
-      </Stack>
+      </Stack>*/}
 
       {/* Attendance Table */}
       <TableContainer component={Paper} elevation={2}>
@@ -345,11 +336,11 @@ export default function AttendancesPage() {
               <TableCell sx={{ fontWeight: 600 }}>Giờ Vào</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Giờ Ra</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Thời Gian</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Trạng Thái</TableCell>
+              {/*<TableCell sx={{ fontWeight: 600 }}>Trạng Thái</TableCell>*/}
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredAttendances.length === 0 ? (
+            {attendances.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} sx={{ border: 0 }}>
                   <Box sx={{ textAlign: 'center', py: 8 }}>
@@ -363,7 +354,7 @@ export default function AttendancesPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredAttendances.map((attendance) => (
+                attendances.map((attendance) => (
                 <TableRow
                   key={attendance.id}
                   sx={{ '&:hover': { backgroundColor: '#F9F9F9' } }}
@@ -385,14 +376,14 @@ export default function AttendancesPage() {
                       '-'
                     )}
                   </TableCell>
-                  <TableCell>{attendance.duration || '-'}</TableCell>
+                  {/*<TableCell>{attendance.duration || '-'}</TableCell>
                   <TableCell>
                     <Chip
                       label={getStatusLabel(attendance.status)}
                       color={getStatusColor(attendance.status)}
                       size="small"
                     />
-                  </TableCell>
+                  </TableCell>*/}
                 </TableRow>
               ))
             )}
