@@ -66,8 +66,17 @@ export function DevToolsBlocker() {
       }
     };
 
-    // Detect DevTools using timing attack
+    // Detect DevTools using timing attack (desktop only)
     const detectDevTools = () => {
+      // Skip detection on mobile devices - browser UI causes false positives
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      ) || ('ontouchstart' in window && window.innerWidth < 1024);
+
+      if (isMobile) {
+        return;
+      }
+
       const threshold = 160;
       const widthThreshold = window.outerWidth - window.innerWidth > threshold;
       const heightThreshold = window.outerHeight - window.innerHeight > threshold;

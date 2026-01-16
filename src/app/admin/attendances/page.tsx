@@ -36,6 +36,7 @@ import { useNotify } from '@/components/notification/NotificationProvider';
 import { getAttendances, type Attendance } from '@/lib/api/admin/attendances';
 import { getActiveEmployees, type ActiveEmployee } from '@/lib/api/admin/employees';
 import { ErrorMessage } from '@/lib/constants';
+import { parseDate, parseDateTime } from '@/lib/api/types';
 import dayjs from 'dayjs';
 
 const getStatusColor = (status: string) => {
@@ -369,17 +370,17 @@ export default function AttendancesPage() {
                 >
                   <TableCell>{attendance.id}</TableCell>
                   <TableCell>{attendance.fullName}</TableCell>
-                  <TableCell>{attendance.date}</TableCell>
+                  <TableCell>{parseDate(attendance.checkInDate).format('DD/MM/YYYY')}</TableCell>
                   <TableCell>
-                    {attendance.checkInTime ? (
-                      <Chip label={attendance.checkInTime} size="small" variant="outlined" />
+                    {attendance.checkIn ? (
+                      <Chip label={parseDateTime(attendance.checkIn).format('HH:mm')} size="small" variant="outlined" />
                     ) : (
                       '-'
                     )}
                   </TableCell>
                   <TableCell>
-                    {attendance.checkOutTime ? (
-                      <Chip label={attendance.checkOutTime} size="small" variant="outlined" />
+                    {attendance.checkOut ? (
+                      <Chip label={parseDateTime(attendance.checkOut).format('HH:mm')} size="small" variant="outlined" />
                     ) : (
                       '-'
                     )}

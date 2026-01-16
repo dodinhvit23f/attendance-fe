@@ -29,16 +29,19 @@ import DownloadIcon from '@mui/icons-material/Download';
 import PrintIcon from '@mui/icons-material/Print';
 import QRCode from 'react-qr-code';
 import { useEffect, useState, useCallback } from 'react';
-import dayjs from 'dayjs';
 import { getManagerFacilities, ManagerFacility } from '@/lib/api/manager/facilities';
 import { recordAttendance, getManagerAttendances, Attendance } from '@/lib/api/manager/attendance';
+import { parseDate, parseDateTime } from '@/lib/api/types';
 import { useNotify } from '@/components/notification/NotificationProvider';
 import { MapPicker } from '@/components/admin/MapPicker';
 import { useLoading } from "@/components/root/client-layout";
 import { QRScannerInline } from '@/components/qr/QRScannerInline';
 
 const getDateString = (date: Date) => {
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 // Calculate distance between two coordinates in meters
@@ -323,31 +326,38 @@ export default function ManagerAttendancesPage() {
   };
 
   return (
-    <Box sx={{ width: '100%', p: 3 }}>
+    <Box sx={{ width: '100%', p: { xs: 1.5, sm: 2, md: 3 }, maxWidth: '100%', overflow: 'hidden' }}>
       {/* Header */}
       <Stack
-        direction="row"
+        direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
-        alignItems="center"
-        mb={3}
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        spacing={{ xs: 1.5, sm: 0 }}
+        mb={2}
       >
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+        <Typography
+          variant="h5"
+          component="h1"
+          sx={{ fontWeight: 600, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}
+        >
           Quản Lý Chấm Công
         </Typography>
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-end', sm: 'flex-start' }}>
           <Button
             variant="outlined"
             startIcon={<QrCode2Icon />}
             onClick={handleOpenQRDialog}
-            sx={{ borderRadius: '8px' }}
+            size="small"
+            sx={{ borderRadius: '8px', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
           >
-            Mã QR Cơ Sở
+            Mã QR
           </Button>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleOpenDialog}
-            sx={{ borderRadius: '8px' }}
+            size="small"
+            sx={{ borderRadius: '8px', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
           >
             Chấm công
           </Button>
@@ -355,14 +365,15 @@ export default function ManagerAttendancesPage() {
       </Stack>
 
       {/* Filters */}
-      <Stack direction="row" spacing={2} mb={3} flexWrap="wrap">
+      <Stack direction="row" spacing={1} mb={2} flexWrap="wrap" useFlexGap>
         <TextField
           label="Từ ngày"
           type="date"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
           InputLabelProps={{ shrink: true }}
-          sx={{ minWidth: 180 }}
+          size="small"
+          sx={{ minWidth: { xs: 130, sm: 160 }, flex: { xs: 1, sm: 'none' } }}
         />
         <TextField
           label="Đến ngày"
@@ -370,29 +381,29 @@ export default function ManagerAttendancesPage() {
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
           InputLabelProps={{ shrink: true }}
-          sx={{ minWidth: 180 }}
+          size="small"
+          sx={{ minWidth: { xs: 130, sm: 160 }, flex: { xs: 1, sm: 'none' } }}
         />
       </Stack>
 
       {/* Attendance Table */}
-      <TableContainer component={Paper} elevation={2}>
-        <Table>
+      <TableContainer component={Paper} elevation={2} sx={{ maxWidth: '100%' }}>
+        <Table size="small">
           <TableHead>
             <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
-              <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Nhân Viên</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Ngày</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Giờ Vào</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Giờ Ra</TableCell>
-             {/* <TableCell sx={{ fontWeight: 600 }}>Trạng Thái</TableCell>*/}
+              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>ID</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Nhân Viên</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Ngày</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Vào</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Ra</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {attendances.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} sx={{ border: 0 }}>
-                  <Box sx={{ textAlign: 'center', py: 8 }}>
-                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                <TableCell colSpan={5} sx={{ border: 0 }}>
+                  <Box sx={{ textAlign: 'center', py: { xs: 4, sm: 8 } }}>
+                    <Typography variant="body1" color="text.secondary" gutterBottom>
                       Chưa có dữ liệu
                     </Typography>
                   </Box>
@@ -401,23 +412,13 @@ export default function ManagerAttendancesPage() {
             ) : (
               attendances.map((attendance) => (
                 <TableRow key={attendance.id}>
-                  <TableCell>{attendance.id}</TableCell>
-                  <TableCell>{attendance.fullName}</TableCell>
-                  <TableCell>{attendance.checkInDate}</TableCell>
-                  <TableCell>{dayjs(attendance.checkIn).format('HH:mm')}</TableCell>
-                  <TableCell>
-                    {attendance.checkOut ? dayjs(attendance.checkOut).format('HH:mm') : '-'}
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{attendance.id}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, maxWidth: { xs: 80, sm: 'none' }, overflow: 'hidden', textOverflow: 'ellipsis' }}>{attendance.fullName}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>{parseDate(attendance.checkInDate).format('DD/MM')}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{parseDateTime(attendance.checkIn).format('HH:mm')}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    {attendance.checkOut ? parseDateTime(attendance.checkOut).format('HH:mm') : '-'}
                   </TableCell>
-                  {/*<TableCell>
-                    <Typography
-                      sx={{
-                        color: attendance.checkOut ? 'success.main' : 'warning.main',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {attendance.checkOut ? 'Đã hoàn thành' : 'Đang làm việc'}
-                    </Typography>
-                  </TableCell>*/}
                 </TableRow>
               ))
             )}
