@@ -39,6 +39,10 @@ export const MapPicker: React.FC<MapPickerProps> = ({
   const mountedRef = useRef<boolean>(true);
   const [L, setL] = useState<any>(null);
 
+  // Track user interaction to prevent zoom reset
+  const isUserInteractionRef = useRef(false);
+  const hasFitBoundsRef = useRef(false);
+
   // Store initial coordinates and callback in refs to avoid dependency issues
   const initialLatRef = useRef(latitude);
   const initialLngRef = useRef(longitude);
@@ -113,6 +117,7 @@ export const MapPicker: React.FC<MapPickerProps> = ({
     // Handle marker drag
     marker.on('dragend', () => {
       if (!mountedRef.current) return;
+      isUserInteractionRef.current = true;
       const position = marker.getLatLng();
       onLocationChangeRef.current(position.lat, position.lng);
     });
@@ -120,6 +125,7 @@ export const MapPicker: React.FC<MapPickerProps> = ({
     // Handle map click
     map.on('click', (e: { latlng: { lat: any; lng: any; }; }) => {
       if (!mountedRef.current) return;
+      isUserInteractionRef.current = true;
       const { lat, lng } = e.latlng;
       marker.setLatLng([lat, lng]);
       onLocationChangeRef.current(lat, lng);
@@ -157,7 +163,13 @@ export const MapPicker: React.FC<MapPickerProps> = ({
     if (!L || !markerRef.current || !mapRef.current) return;
     const newLatLng = L.latLng(latitude, longitude);
     markerRef.current.setLatLng(newLatLng);
-    mapRef.current.setView(newLatLng, mapRef.current.getZoom());
+
+    // Only pan map if change was NOT from user interaction (click/drag)
+    if (!isUserInteractionRef.current) {
+      mapRef.current.setView(newLatLng, mapRef.current.getZoom());
+    }
+    // Reset user interaction flag
+    isUserInteractionRef.current = false;
   }, [L, latitude, longitude]);
 
   // Handle user location marker and distance line
@@ -212,12 +224,15 @@ export const MapPicker: React.FC<MapPickerProps> = ({
 
       lineRef.current = line;
 
-      // Fit map to show both markers
-      const bounds = L.latLngBounds([
-        [userLocation.lat, userLocation.lng],
-        [latitude, longitude],
-      ]);
-      mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+      // Fit map to show both markers only on first load (when user location becomes available)
+      if (!hasFitBoundsRef.current) {
+        const bounds = L.latLngBounds([
+          [userLocation.lat, userLocation.lng],
+          [latitude, longitude],
+        ]);
+        mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+        hasFitBoundsRef.current = true;
+      }
     }
   }, [L, userLocation, latitude, longitude]);
 
