@@ -36,13 +36,7 @@ import { useNotify } from '@/components/notification/NotificationProvider';
 import { MapPicker } from '@/components/admin/MapPicker';
 import { useLoading } from "@/components/root/client-layout";
 import { QRScannerInline } from '@/components/qr/QRScannerInline';
-
-const getDateString = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+import dayjs from 'dayjs';
 
 // Calculate distance between two coordinates in meters
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -61,13 +55,9 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 };
 
 export default function UserAttendancesPage() {
-  const today = new Date();
-  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
   const { notifyError, notifySuccess } = useNotify();
-  const [startDate, setStartDate] = useState(getDateString(firstDayOfMonth));
-  const [endDate, setEndDate] = useState(getDateString(lastDayOfMonth));
+  const [startDate, setStartDate] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
+  const [endDate, setEndDate] = useState(dayjs().endOf('month').format('YYYY-MM-DD'));
   const [openDialog, setOpenDialog] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [openQRDialog, setOpenQRDialog] = useState(false);
