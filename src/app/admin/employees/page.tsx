@@ -43,7 +43,7 @@ export default function EmployeesPage() {
   const [roles, setRoles] = React.useState<Role[]>([]);
   const [facilities, setFacilities] = React.useState<FacilityLight[]>([]);
   const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [rowsPerPage, setRowsPerPage] = React.useState(30);
   const [totalElements, setTotalElements] = React.useState(0);
   const [error, setError] = React.useState<string | null>(null);
   const [togglingId, setTogglingId] = React.useState<number | null>(null);
@@ -366,7 +366,7 @@ export default function EmployeesPage() {
           </TableBody>
         </Table>
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25, 50]}
+          rowsPerPageOptions={[30, 50]}
           component="div"
           count={totalElements}
           rowsPerPage={rowsPerPage}
