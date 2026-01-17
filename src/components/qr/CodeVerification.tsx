@@ -178,7 +178,7 @@ export const CodeVerification: React.FC<CodeVerificationProps> = ({
         }}
       >
         <Link
-            href="/"
+            href="/s"
             underline="hover"
             sx={{
               color: theme.palette.text.secondary,

@@ -2,3 +2,4 @@
 export * from './employees';
 export * from './facilities';
 export * from './roles';
+export * from './shifts';

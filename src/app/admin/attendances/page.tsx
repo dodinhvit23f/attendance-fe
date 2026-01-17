@@ -29,9 +29,11 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import {useCallback, useEffect, useState} from 'react';
 import { useLoading } from '@/components/root/client-layout';
 import { CameraCapture } from '@/components/admin/CameraCapture';
+import { ShiftDialog } from '@/components/admin/ShiftDialog';
 import { useNotify } from '@/components/notification/NotificationProvider';
 import { getAttendances, type Attendance } from '@/lib/api/admin/attendances';
 import { getActiveEmployees, type ActiveEmployee } from '@/lib/api/admin/employees';
@@ -90,6 +92,7 @@ export default function AttendancesPage() {
   const [selectedUserNames, setSelectedUserNames] = useState<string[]>([]);
   const [startDate, setStartDate] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
   const [endDate, setEndDate] = useState(dayjs().endOf('month').format('YYYY-MM-DD'));
+  const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
 
   // Fetch active employees
   useEffect(() => {
@@ -172,18 +175,18 @@ export default function AttendancesPage() {
         <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
           Quản Lý Chấm Công
         </Typography>
-        {/*<Button
-          variant="contained"
-          startIcon={<CameraAltIcon />}
-          onClick={handleOpenCamera}
+        <Button
+          variant="outlined"
+          startIcon={<ScheduleIcon />}
+          onClick={() => setShiftDialogOpen(true)}
           sx={{
             borderRadius: '8px',
             textTransform: 'none',
             px: 3,
           }}
         >
-          Chấm Công
-        </Button>*/}
+          Ca Làm Việc
+        </Button>
       </Stack>
 
       {/* Filters */}
@@ -396,6 +399,12 @@ export default function AttendancesPage() {
         open={cameraOpen}
         onClose={handleCloseCamera}
         onCapture={handleCapturePhoto}
+      />
+
+      {/* Shift Management Dialog */}
+      <ShiftDialog
+        open={shiftDialogOpen}
+        onClose={() => setShiftDialogOpen(false)}
       />
     </Box>
   );
