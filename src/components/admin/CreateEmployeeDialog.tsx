@@ -38,8 +38,10 @@ import BusinessIcon from '@mui/icons-material/Business';
 import { createEmployee } from '@/lib/api/admin/employees';
 import { type Role } from '@/lib/api/admin/roles';
 import { FacilityLight } from '@/lib/api/admin/facilities';
+import { type Shift } from '@/lib/api/admin/shifts';
 import { useNotify } from '@/components/notification/NotificationProvider';
 import { ErrorMessage } from '@/lib/constants';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 
 interface CreateEmployeeDialogProps {
   open: boolean;
@@ -47,6 +49,7 @@ interface CreateEmployeeDialogProps {
   onSave: () => void;
   roles: Role[];
   facilities: FacilityLight[];
+  shifts: Shift[];
 }
 
 interface CreateEmployeeFormData {
@@ -60,6 +63,7 @@ interface CreateEmployeeFormData {
   role: number;
   password: string;
   facilityIds: number[];
+  shiftId: number | null;
   active: boolean
 }
 
@@ -69,6 +73,7 @@ export const CreateEmployeeDialog: React.FC<CreateEmployeeDialogProps> = ({
   onSave,
   roles,
   facilities,
+  shifts,
 }) => {
   const { notifyError } = useNotify();
 
@@ -83,6 +88,7 @@ export const CreateEmployeeDialog: React.FC<CreateEmployeeDialogProps> = ({
     role: roles.length > 0 ? roles[0].id : 0,
     password: '',
     facilityIds: [],
+    shiftId: null,
     active: true
   });
 
@@ -104,6 +110,7 @@ export const CreateEmployeeDialog: React.FC<CreateEmployeeDialogProps> = ({
         role: roles.length > 0 ? roles[0].id : 0,
         password: '',
         facilityIds: [],
+        shiftId: null,
         active: true
       });
       setErrors({});
@@ -196,7 +203,7 @@ export const CreateEmployeeDialog: React.FC<CreateEmployeeDialogProps> = ({
       };
 
       // Prepare the request data
-      const requestData = {
+      const requestData: any = {
         userName: formData.accountName,
         password: formData.password,
         role: selectedRole.name,
@@ -209,6 +216,11 @@ export const CreateEmployeeDialog: React.FC<CreateEmployeeDialogProps> = ({
         gender: genderMap[formData.gender],
         active: true
       };
+
+      // Only include shiftId if selected
+      if (formData.shiftId !== null) {
+        requestData.shiftId = formData.shiftId;
+      }
 
       // Call the API
       await createEmployee(requestData);
@@ -240,6 +252,7 @@ export const CreateEmployeeDialog: React.FC<CreateEmployeeDialogProps> = ({
       role: roles.length > 0 ? roles[0].id : 0,
       password: '',
       facilityIds: [],
+      shiftId: null,
       active: true
     });
     setErrors({});
@@ -491,6 +504,29 @@ export const CreateEmployeeDialog: React.FC<CreateEmployeeDialogProps> = ({
                     {errors.facilityIds}
                   </Typography>
                 )}
+              </FormControl>
+
+              {/* Shift Selection (Optional) */}
+              <FormControl fullWidth>
+                <InputLabel>Ca Làm Việc</InputLabel>
+                <Select<number | ''>
+                  value={formData.shiftId ?? ''}
+                  label="Ca Làm Việc"
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    handleChange('shiftId', value === '' ? null : Number(value));
+                  }}
+                  sx={{ borderRadius: '8px' }}
+                >
+                  <MenuItem value="">
+                    <em>Không chọn</em>
+                  </MenuItem>
+                  {shifts?.filter(s => s.isActive).map((shift) => (
+                    <MenuItem key={shift.id} value={shift.id}>
+                      {shift.name} ({shift.startTime.substring(0, 5)} - {shift.endTime.substring(0, 5)})
+                    </MenuItem>
+                  ))}
+                </Select>
               </FormControl>
 
               {/* Password */}

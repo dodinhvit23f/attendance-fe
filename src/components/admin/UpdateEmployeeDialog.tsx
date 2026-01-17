@@ -38,8 +38,10 @@ import BusinessIcon from '@mui/icons-material/Business';
 import { updateEmployee, getEmployee } from '@/lib/api/admin/employees';
 import { type Role } from '@/lib/api/admin/roles';
 import { FacilityLight } from '@/lib/api/admin/facilities';
+import { type Shift } from '@/lib/api/admin/shifts';
 import { useNotify } from '@/components/notification/NotificationProvider';
 import { ErrorMessage } from '@/lib/constants';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 
 export interface UpdateEmployeeData {
   id: number
@@ -61,6 +63,7 @@ interface UpdateEmployeeDialogProps {
   employee: UpdateEmployeeData;
   roles: Role[];
   facilities: FacilityLight[];
+  shifts: Shift[];
 }
 
 interface UpdateEmployeeFormData {
@@ -72,6 +75,7 @@ interface UpdateEmployeeFormData {
   gender: 'male' | 'female' | 'other';
   role: string;
   facilityIds: number[];
+  shiftId: number | null;
   password: string;
 }
 
@@ -82,6 +86,7 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
   employee,
   roles,
   facilities,
+  shifts,
 }) => {
   const { notifyError, notifySuccess } = useNotify();
 
@@ -94,6 +99,7 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
     gender: 'male',
     role: '',
     facilityIds: [],
+    shiftId: null,
     password: '',
   });
 
@@ -131,6 +137,7 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
             gender,
             role: employeeData.role,
             facilityIds,
+            shiftId: (employeeData as any).shiftId ?? null,
             password: '',
           });
           setErrors({});
@@ -234,6 +241,11 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
       if (formData.password.trim()) {
         requestData.password = formData.password;
       }
+
+      // Only include shiftId if selected
+      if (formData.shiftId !== null) {
+        requestData.shiftId = formData.shiftId;
+      }
       console.log(requestData)
       // Call the API PUT /admin/v1/employees/{id}
       await updateEmployee(employee.id, requestData);
@@ -266,6 +278,7 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
       gender: 'male',
       role: '',
       facilityIds: [],
+      shiftId: null,
       password: '',
     });
     setErrors({});
@@ -498,6 +511,29 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
                     <MenuItem key={facility.id} value={facility.id}>
                       <Checkbox checked={formData.facilityIds.indexOf(facility.id) > -1} />
                       <ListItemText primary={facility.name} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {/* Shift Selection (Optional) */}
+              <FormControl fullWidth>
+                <InputLabel>Ca Làm Việc</InputLabel>
+                <Select<number | ''>
+                  value={formData.shiftId ?? ''}
+                  label="Ca Làm Việc"
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    handleChange('shiftId', value === '' ? null : Number(value));
+                  }}
+                  sx={{ borderRadius: '8px' }}
+                >
+                  <MenuItem value="">
+                    <em>Không chọn</em>
+                  </MenuItem>
+                  {shifts?.filter(s => s.isActive).map((shift) => (
+                    <MenuItem key={shift.id} value={shift.id}>
+                      {shift.name} ({shift.startTime.substring(0, 5)} - {shift.endTime.substring(0, 5)})
                     </MenuItem>
                   ))}
                 </Select>

@@ -29,6 +29,7 @@ import { useLoading } from '@/components/root/client-layout';
 import { getEmployees, Employee, updateEmployeeStatus } from '@/lib/api/admin/employees';
 import { getRoles, type Role } from '@/lib/api/admin/roles';
 import { FacilityLight, getFacilitiesLight } from '@/lib/api/admin/facilities';
+import { getShifts, type Shift } from '@/lib/api/admin/shifts';
 import { useNotify } from '@/components/notification/NotificationProvider';
 import { ErrorMessage } from '@/lib/constants';
 
@@ -49,6 +50,8 @@ export default function EmployeesPage() {
   const [togglingId, setTogglingId] = React.useState<number | null>(null);
   const [rolesLoaded, setRolesLoaded] = React.useState(false);
   const [facilitiesLoaded, setFacilitiesLoaded] = React.useState(false);
+  const [shifts, setShifts] = React.useState<Shift[]>([]);
+  const [shiftsLoaded, setShiftsLoaded] = React.useState(false);
 
   const fetchEmployees = async () => {
     try {
@@ -105,13 +108,31 @@ export default function EmployeesPage() {
     }
   }, [rolesLoaded, facilitiesLoaded]);
 
-  // Step 3: Fetch employees after roles and facilities are loaded
+  // Step 2.5: Fetch shifts after roles are loaded
   useEffect(() => {
-    if (rolesLoaded && facilitiesLoaded) {
+    const fetchShifts = async () => {
+      try {
+        const response = await getShifts();
+        setShifts(response.data.shifts || []);
+        setShiftsLoaded(true);
+      } catch (err) {
+        console.error('Error fetching shifts:', err);
+        setShiftsLoaded(true); // Set to true even on error to prevent infinite waiting
+      }
+    };
+
+    if (rolesLoaded && !shiftsLoaded) {
+      fetchShifts();
+    }
+  }, [rolesLoaded, shiftsLoaded]);
+
+  // Step 3: Fetch employees after roles, facilities, and shifts are loaded
+  useEffect(() => {
+    if (rolesLoaded && facilitiesLoaded && shiftsLoaded) {
       fetchEmployees();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rowsPerPage, rolesLoaded, facilitiesLoaded]);
+  }, [page, rowsPerPage, rolesLoaded, facilitiesLoaded, shiftsLoaded]);
 
 
   const handleAddEmployee = () => {
@@ -387,6 +408,7 @@ export default function EmployeesPage() {
         onSave={handleSaveEmployee}
         roles={roles}
         facilities={facilities}
+        shifts={shifts}
       />
 
       {/* Update Employee Dialog */}
@@ -398,6 +420,7 @@ export default function EmployeesPage() {
           employee={selectedEmployee}
           roles={roles}
           facilities={facilities}
+          shifts={shifts}
         />
       )}
     </Box>

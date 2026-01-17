@@ -13,7 +13,8 @@ export interface Employee {
   active: boolean;
   version: number;
   phoneNumber: string
-  address: string
+  address: string;
+  shiftId: number;
 }
 
 export interface GetEmployeesParams {
@@ -94,6 +95,7 @@ export interface EmployeeDetail {
     id: number;
     name: string;
   }[];
+  shiftId: number;
 }
 
 export interface GetEmployeeResponse {
