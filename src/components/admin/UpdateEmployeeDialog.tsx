@@ -246,7 +246,6 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
       if (formData.shiftId !== null) {
         requestData.shiftId = formData.shiftId;
       }
-      console.log(requestData)
       // Call the API PUT /admin/v1/employees/{id}
       await updateEmployee(employee.id, requestData);
 

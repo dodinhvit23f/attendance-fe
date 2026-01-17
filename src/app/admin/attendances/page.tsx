@@ -87,6 +87,7 @@ export default function AttendancesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [cameraOpen, setCameraOpen] = useState(false);
+
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [activeEmployees, setActiveEmployees] = useState<ActiveEmployee[]>([]);
   const [selectedUserNames, setSelectedUserNames] = useState<string[]>([]);
@@ -152,7 +153,6 @@ export default function AttendancesPage() {
 
   const handleCapturePhoto = (imageData: string) => {
     // Handle the captured image (e.g., save to database, display, etc.)
-    console.log('Captured image:', imageData.substring(0, 50) + '...');
     notifySuccess('Chụp ảnh thành công! Đang xử lý điểm danh...');
     // TODO: Send imageData to backend for attendance verification
   };

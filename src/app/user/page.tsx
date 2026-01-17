@@ -86,7 +86,6 @@ export default function UserDashboard() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        console.log('Location granted:', position.coords);
         setLocationPermission({ granted: true, loading: false, error: null });
       },
       (error) => {

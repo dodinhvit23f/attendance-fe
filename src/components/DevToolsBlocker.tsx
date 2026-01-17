@@ -96,7 +96,7 @@ export function DevToolsBlocker() {
           document.body.innerHTML = '<h1 style="text-align: center; margin-top: 50px;">Access Denied</h1>';
         },
       });
-      console.log(element);
+
     };
 
     // Add event listeners
