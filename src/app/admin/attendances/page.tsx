@@ -23,6 +23,11 @@ import {
   Checkbox,
   ListItemText,
   OutlinedInput,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -30,61 +35,22 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import ScheduleIcon from '@mui/icons-material/Schedule';
-import {useCallback, useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import { useLoading } from '@/components/root/client-layout';
 import { CameraCapture } from '@/components/admin/CameraCapture';
 import { ShiftDialog } from '@/components/admin/ShiftDialog';
 import { useNotify } from '@/components/notification/NotificationProvider';
-import { getAttendances, type Attendance } from '@/lib/api/admin/attendances';
+import { getAttendances, assignShiftToAttendance, type Attendance } from '@/lib/api/admin/attendances';
 import { getActiveEmployees, type ActiveEmployee } from '@/lib/api/admin/employees';
+import { getShifts, type Shift } from '@/lib/api/admin/shifts';
 import { ErrorMessage } from '@/lib/constants';
 import { parseDate, parseDateTime } from '@/lib/api/types';
 import dayjs from 'dayjs';
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'present':
-      return 'success';
-    case 'late':
-      return 'warning';
-    case 'absent':
-      return 'error';
-    default:
-      return 'default';
-  }
-};
-
-const getStatusLabel = (status: string) => {
-  switch (status) {
-    case 'present':
-      return 'Có mặt';
-    case 'late':
-      return 'Đi muộn';
-    case 'absent':
-      return 'Vắng mặt';
-    default:
-      return 'Không xác định';
-  }
-};
-
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case 'present':
-      return <CheckCircleIcon fontSize="small" />;
-    case 'late':
-      return <AccessTimeIcon fontSize="small" />;
-    case 'absent':
-      return <CancelIcon fontSize="small" />;
-    default:
-      return null;
-  }
-};
 
 export default function AttendancesPage() {
 
   const { setLoading } = useLoading();
   const { notifySuccess, notifyError } = useNotify();
-  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [cameraOpen, setCameraOpen] = useState(false);
 
@@ -94,27 +60,21 @@ export default function AttendancesPage() {
   const [startDate, setStartDate] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
   const [endDate, setEndDate] = useState(dayjs().endOf('month').format('YYYY-MM-DD'));
   const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [employeesLoaded, setEmployeesLoaded] = useState(false);
+  const [shiftsLoaded, setShiftsLoaded] = useState(false);
+  const [assignShiftDialogOpen, setAssignShiftDialogOpen] = useState(false);
+  const [selectedAttendance, setSelectedAttendance] = useState<Attendance | null>(null);
+  const [selectedShiftId, setSelectedShiftId] = useState<number | ''>('');
+  const [isAssigning, setIsAssigning] = useState(false);
 
-  // Fetch active employees
-  useEffect(() => {
-    const fetchActiveEmployees = async () => {
-      try {
-        const response = await getActiveEmployees();
-        setActiveEmployees(response.data.users);
-      } catch (error: any) {
-        console.error('Failed to fetch active employees:', error);
-        if (error instanceof Error) {
-          const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể tải danh sách nhân viên');
-          notifyError(errorMessage);
-        }
-      }
-    };
+  const getShiftName = (shiftId: number | undefined) => {
+    if (!shiftId) return null;
+    const shift = shifts.find(s => s.id === shiftId);
+    return shift?.name || null;
+  };
 
-    fetchActiveEmployees();
-  }, [notifyError]);
-
-  // Fetch attendances
-  const fetchAttendances = useCallback(async () => {
+  const fetchAttendances = async () => {
     try {
       setLoading(true);
       const response = await getAttendances({
@@ -137,15 +97,58 @@ export default function AttendancesPage() {
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate, selectedUserNames, setLoading, notifyError]);
-
-  useEffect(() => {
-    fetchAttendances();
-  }, [fetchAttendances]);
-
-  const handleOpenCamera = () => {
-    setCameraOpen(true);
   };
+
+  // Step 1: Fetch active employees on component mount
+  useEffect(() => {
+    const fetchActiveEmployees = async () => {
+      try {
+        const response = await getActiveEmployees();
+        setActiveEmployees(response.data.users);
+        setEmployeesLoaded(true);
+      } catch (error: any) {
+        console.error('Failed to fetch active employees:', error);
+        if (error instanceof Error) {
+          const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể tải danh sách nhân viên');
+          notifyError(errorMessage);
+        }
+        setEmployeesLoaded(true);
+      }
+    };
+
+    if (!employeesLoaded) {
+      fetchActiveEmployees();
+    }
+  }, [employeesLoaded, notifyError]);
+
+  // Step 2: Fetch shifts after employees are loaded
+  useEffect(() => {
+    const fetchShifts = async () => {
+      try {
+        const response = await getShifts();
+        setShifts(response.data.shifts || []);
+        setShiftsLoaded(true);
+      } catch (error: any) {
+        console.error('Failed to fetch shifts:', error);
+        if (error instanceof Error) {
+          const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể tải danh sách ca làm việc');
+          notifyError(errorMessage);
+        }
+        setShiftsLoaded(true);
+      }
+    };
+
+    if (employeesLoaded && !shiftsLoaded) {
+      fetchShifts();
+    }
+  }, [employeesLoaded, shiftsLoaded, notifyError]);
+
+  // Step 3: Fetch attendances after employees and shifts are loaded
+  useEffect(() => {
+    if (employeesLoaded && shiftsLoaded) {
+      fetchAttendances();
+    }
+  }, [startDate, endDate, selectedUserNames, employeesLoaded, shiftsLoaded]);
 
   const handleCloseCamera = () => {
     setCameraOpen(false);
@@ -161,6 +164,38 @@ export default function AttendancesPage() {
   const handleUserNameChange = (event: any) => {
     const value = event.target.value;
     setSelectedUserNames(typeof value === 'string' ? value.split(',') : value);
+  };
+
+  const handleOpenAssignShiftDialog = (attendance: Attendance) => {
+    setSelectedAttendance(attendance);
+    setSelectedShiftId('');
+    setAssignShiftDialogOpen(true);
+  };
+
+  const handleCloseAssignShiftDialog = () => {
+    setAssignShiftDialogOpen(false);
+    setSelectedAttendance(null);
+    setSelectedShiftId('');
+  };
+
+  const handleAssignShift = async () => {
+    if (!selectedAttendance || !selectedShiftId) return;
+
+    setIsAssigning(true);
+    try {
+      await assignShiftToAttendance(selectedAttendance.id, selectedShiftId);
+      notifySuccess('Phân ca thành công!');
+      handleCloseAssignShiftDialog();
+      fetchAttendances();
+    } catch (error: any) {
+      console.error('Failed to assign shift:', error);
+      if (error instanceof Error) {
+        const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể phân ca');
+        notifyError(errorMessage);
+      }
+    } finally {
+      setIsAssigning(false);
+    }
   };
 
   return (
@@ -338,8 +373,7 @@ export default function AttendancesPage() {
               <TableCell sx={{ fontWeight: 600 }}>Ngày</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Giờ Vào</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Giờ Ra</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Thời Gian</TableCell>
-              {/*<TableCell sx={{ fontWeight: 600 }}>Trạng Thái</TableCell>*/}
+              <TableCell sx={{ fontWeight: 600 }}>Ca</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -379,20 +413,100 @@ export default function AttendancesPage() {
                       '-'
                     )}
                   </TableCell>
-                  {/*<TableCell>{attendance.duration || '-'}</TableCell>
                   <TableCell>
-                    <Chip
-                      label={getStatusLabel(attendance.status)}
-                      color={getStatusColor(attendance.status)}
-                      size="small"
-                    />
-                  </TableCell>*/}
+                    {attendance.shiftId ? (
+                      <Chip
+                        label={getShiftName(attendance.shiftId) || `Ca ${attendance.shiftId}`}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                      />
+                    ) : (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleOpenAssignShiftDialog(attendance)}
+                        sx={{
+                          borderRadius: '8px',
+                          textTransform: 'none',
+                          fontSize: '0.75rem',
+                        }}
+                      >
+                        Phân Ca
+                      </Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Assign Shift Dialog */}
+      <Dialog
+        open={assignShiftDialogOpen}
+        onClose={handleCloseAssignShiftDialog}
+        maxWidth="xs"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: '12px',
+            },
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>
+          Phân Ca Làm Việc
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Nhân viên: <strong>{selectedAttendance?.fullName}</strong>
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Ngày: <strong>{selectedAttendance ? parseDate(selectedAttendance.checkInDate).format('DD/MM/YYYY') : ''}</strong>
+          </Typography>
+          <FormControl fullWidth sx={{ mt: 1 }}>
+            <InputLabel>Chọn Ca</InputLabel>
+            <Select
+              value={selectedShiftId}
+              label="Chọn Ca"
+              onChange={(e) => setSelectedShiftId(e.target.value as number)}
+              sx={{ borderRadius: '8px' }}
+            >
+              {shifts.filter(s => s.isActive).map((shift) => (
+                <MenuItem key={shift.id} value={shift.id}>
+                  {shift.name} ({shift.startTime.substring(0, 5)} - {shift.endTime.substring(0, 5)})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button
+            onClick={handleCloseAssignShiftDialog}
+            variant="outlined"
+            sx={{
+              borderRadius: '8px',
+              textTransform: 'none',
+            }}
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleAssignShift}
+            variant="contained"
+            disabled={!selectedShiftId || isAssigning}
+            sx={{
+              borderRadius: '8px',
+              textTransform: 'none',
+            }}
+          >
+            {isAssigning ? <CircularProgress size={20} color="inherit" /> : 'Xác Nhận'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Camera Capture Dialog */}
       <CameraCapture

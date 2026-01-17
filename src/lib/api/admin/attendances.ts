@@ -8,6 +8,7 @@ export interface Attendance {
   checkInDate: string;
   checkIn: string;
   checkOut?: string | null;
+  shiftId?: number;
 }
 
 export interface GetAttendancesParams {
@@ -65,6 +66,53 @@ export const getAttendances = async (params: GetAttendancesParams): Promise<GetA
     }
     const error: ApiErrorResponse = await response.json();
     throw new Error(getErrorCode(error, 'Failed to fetch attendances'));
+  }
+
+  return response.json();
+};
+
+export interface AssignShiftRequest {
+  shiftId: number;
+}
+
+export interface AssignShiftResponse {
+  traceId: string;
+  data: Attendance;
+}
+
+/**
+ * Assign shift to attendance
+ */
+export const assignShiftToAttendance = async (
+  attendanceId: number,
+  shiftId: number
+): Promise<AssignShiftResponse> => {
+  const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+
+  if (!accessToken) {
+    throw new Error('Access token not found. Please login first.');
+  }
+
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_ADMIN_ATTENDANCE}/${attendanceId}/shift`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ shiftId }),
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      const unauthorizedError = new Error('Unauthorized. Please login again.');
+      (unauthorizedError as any).status = 401;
+      throw unauthorizedError;
+    }
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to assign shift'));
   }
 
   return response.json();
