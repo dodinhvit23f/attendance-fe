@@ -93,7 +93,7 @@ export const ShiftDialog: React.FC<ShiftDialogProps> = ({open, onClose}) => {
     } finally {
       setIsLoading(false);
     }
-  }, [notifyError]);
+  }, []);
 
   useEffect(() => {
     if (open) {

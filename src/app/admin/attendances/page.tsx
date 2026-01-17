@@ -186,7 +186,7 @@ export default function AttendancesPage() {
       await assignShiftToAttendance(selectedAttendance.id, selectedShiftId);
       notifySuccess('Phân ca thành công!');
       handleCloseAssignShiftDialog();
-      fetchAttendances();
+      //fetchAttendances();
     } catch (error: any) {
       console.error('Failed to assign shift:', error);
       if (error instanceof Error) {
@@ -296,72 +296,6 @@ export default function AttendancesPage() {
           </Select>
         </FormControl>
       </Stack>
-
-      {/* Statistics Cards */}
-      { /*<Stack direction="row" spacing={2} mb={3}>
-        <Paper
-          elevation={2}
-          sx={{
-            p: 2,
-            flexGrow: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <CheckCircleIcon color="success" sx={{ fontSize: 40 }} />
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 600 }}>
-              {attendances.filter(a => a.status === 'present').length}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Có mặt
-            </Typography>
-          </Box>
-        </Paper>
-
-        <Paper
-          elevation={2}
-          sx={{
-            p: 2,
-            flexGrow: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <AccessTimeIcon color="warning" sx={{ fontSize: 40 }} />
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 600 }}>
-              {attendances.filter(a => a.status === 'late').length}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Đi muộn
-            </Typography>
-          </Box>
-        </Paper>
-
-        <Paper
-          elevation={2}
-          sx={{
-            p: 2,
-            flexGrow: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <CancelIcon color="error" sx={{ fontSize: 40 }} />
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 600 }}>
-              {attendances.filter(a => a.status === 'absent').length}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Vắng mặt
-            </Typography>
-          </Box>
-        </Paper>
-      </Stack>*/}
 
       {/* Attendance Table */}
       <TableContainer component={Paper} elevation={2}>
