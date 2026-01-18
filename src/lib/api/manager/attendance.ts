@@ -8,6 +8,7 @@ export interface Attendance {
   checkInDate: string;
   checkIn: string;
   checkOut?: string;
+  shiftId?: number;
 }
 
 export interface GetAttendancesResponse {
@@ -105,6 +106,42 @@ export const getManagerAttendances = async (
     }
     const error: ApiErrorResponse = await response.json();
     throw new Error(getErrorCode(error, 'Failed to get attendances'));
+  }
+
+  return response.json();
+};
+
+export const assignShiftToManagerAttendance = async (
+  attendanceId: number,
+  shiftId: number
+): Promise<{ traceId: string; data: Attendance }> => {
+  const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+
+  if (!accessToken) {
+    throw new Error('Access token not found. Please login first.');
+  }
+
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_MANAGER_ATTENDANCES}/${attendanceId}/shift`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        Referer: window.location.origin,
+      },
+      body: JSON.stringify({ shiftId }),
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      const unauthorizedError = new Error('Unauthorized. Please login again.');
+      (unauthorizedError as any).status = 401;
+      throw unauthorizedError;
+    }
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to assign shift'));
   }
 
   return response.json();

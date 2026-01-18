@@ -21,6 +21,12 @@ import {
   IconButton,
   Tooltip,
   Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress,
+  Chip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
@@ -30,8 +36,10 @@ import PrintIcon from '@mui/icons-material/Print';
 import QRCode from 'react-qr-code';
 import { useEffect, useState, useCallback } from 'react';
 import { getManagerFacilities, ManagerFacility } from '@/lib/api/manager/facilities';
-import { recordAttendance, getManagerAttendances, Attendance } from '@/lib/api/manager/attendance';
+import { recordAttendance, getManagerAttendances, assignShiftToManagerAttendance, Attendance } from '@/lib/api/manager/attendance';
+import { getManagerShifts, Shift } from '@/lib/api/manager/shifts';
 import { parseDate, parseDateTime } from '@/lib/api/types';
+import { ErrorMessage } from '@/lib/constants';
 import { useNotify } from '@/components/notification/NotificationProvider';
 import { MapPicker } from '@/components/admin/MapPicker';
 import { useLoading } from "@/components/root/client-layout";
@@ -56,8 +64,8 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 
 export default function ManagerAttendancesPage() {
   const { notifyError, notifySuccess } = useNotify();
-  const [startDate, setStartDate] = useState(dayjs().startOf('week').format('YYYY-MM-DD'));
-  const [endDate, setEndDate] = useState(dayjs().endOf('week').format('YYYY-MM-DD'));
+  const [startDate, setStartDate] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
+  const [endDate, setEndDate] = useState(dayjs().endOf('month').format('YYYY-MM-DD'));
   const [openDialog, setOpenDialog] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [openQRDialog, setOpenQRDialog] = useState(false);
@@ -65,6 +73,14 @@ export default function ManagerAttendancesPage() {
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const { setLoading } = useLoading();
+
+  // Shift management state
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [shiftsLoaded, setShiftsLoaded] = useState(false);
+  const [assignShiftDialogOpen, setAssignShiftDialogOpen] = useState(false);
+  const [selectedAttendance, setSelectedAttendance] = useState<Attendance | null>(null);
+  const [selectedShiftId, setSelectedShiftId] = useState<number | ''>('');
+  const [isAssigning, setIsAssigning] = useState(false);
 
   // Fetch attendances
   const fetchAttendances = useCallback(async () => {
@@ -98,6 +114,35 @@ export default function ManagerAttendancesPage() {
     fetchFacilities();
     fetchAttendances();
   }, [fetchAttendances]);
+
+  // Fetch shifts on mount
+  useEffect(() => {
+    const fetchShifts = async () => {
+      try {
+        const response = await getManagerShifts();
+        setShifts(response.data.shifts || []);
+        setShiftsLoaded(true);
+      } catch (error: any) {
+        console.error('Failed to fetch shifts:', error);
+        if (error instanceof Error) {
+          const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể tải danh sách ca làm việc');
+          notifyError(errorMessage);
+        }
+        setShiftsLoaded(true);
+      }
+    };
+
+    if (!shiftsLoaded) {
+      fetchShifts();
+    }
+  }, [shiftsLoaded]);
+
+  // Helper function to get shift name by ID
+  const getShiftName = (shiftId: number | undefined) => {
+    if (!shiftId) return null;
+    const shift = shifts.find(s => s.id === shiftId);
+    return shift?.name || null;
+  };
 
   // Check if user is within range of any facility
   const facilityInRange = userLocation
@@ -175,6 +220,38 @@ export default function ManagerAttendancesPage() {
 
   const handleCloseQRDialog = () => {
     setOpenQRDialog(false);
+  };
+
+  const handleOpenAssignShiftDialog = (attendance: Attendance) => {
+    setSelectedAttendance(attendance);
+    setSelectedShiftId('');
+    setAssignShiftDialogOpen(true);
+  };
+
+  const handleCloseAssignShiftDialog = () => {
+    setAssignShiftDialogOpen(false);
+    setSelectedAttendance(null);
+    setSelectedShiftId('');
+  };
+
+  const handleAssignShift = async () => {
+    if (!selectedAttendance || !selectedShiftId) return;
+
+    setIsAssigning(true);
+    try {
+      await assignShiftToManagerAttendance(selectedAttendance.id, selectedShiftId);
+      notifySuccess('Phân ca thành công!');
+      handleCloseAssignShiftDialog();
+      fetchAttendances();
+    } catch (error: any) {
+      console.error('Failed to assign shift:', error);
+      if (error instanceof Error) {
+        const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể phân ca');
+        notifyError(errorMessage);
+      }
+    } finally {
+      setIsAssigning(false);
+    }
   };
 
   const handleCopyQR = async (facilityId: number) => {
@@ -384,14 +461,15 @@ export default function ManagerAttendancesPage() {
               <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>ID</TableCell>
               <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Nhân Viên</TableCell>
               <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Ngày</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Vào</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Ra</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Giờ Vào</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Giờ Ra</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Ca</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {attendances.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} sx={{ border: 0 }}>
+                <TableCell colSpan={6} sx={{ border: 0 }}>
                   <Box sx={{ textAlign: 'center', py: { xs: 4, sm: 8 } }}>
                     <Typography variant="body1" color="text.secondary" gutterBottom>
                       Chưa có dữ liệu
@@ -408,6 +486,29 @@ export default function ManagerAttendancesPage() {
                   <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{parseDateTime(attendance.checkIn).format('HH:mm')}</TableCell>
                   <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                     {attendance.checkOut ? parseDateTime(attendance.checkOut).format('HH:mm') : '-'}
+                  </TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    {attendance.shiftId ? (
+                      <Chip
+                        label={getShiftName(attendance.shiftId) || `Ca ${attendance.shiftId}`}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                      />
+                    ) : (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleOpenAssignShiftDialog(attendance)}
+                        sx={{
+                          borderRadius: '8px',
+                          textTransform: 'none',
+                          fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                        }}
+                      >
+                        Chọn Ca
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -619,6 +720,71 @@ export default function ManagerAttendancesPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseQRDialog}>Đóng</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Assign Shift Dialog */}
+      <Dialog
+        open={assignShiftDialogOpen}
+        onClose={handleCloseAssignShiftDialog}
+        maxWidth="xs"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: '12px',
+            },
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>
+          Phân Ca Làm Việc
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Nhân viên: <strong>{selectedAttendance?.fullName}</strong>
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Ngày: <strong>{selectedAttendance ? parseDate(selectedAttendance.checkInDate).format('DD/MM/YYYY') : ''}</strong>
+          </Typography>
+          <FormControl fullWidth sx={{ mt: 1 }}>
+            <InputLabel>Chọn Ca</InputLabel>
+            <Select
+              value={selectedShiftId}
+              label="Chọn Ca"
+              onChange={(e) => setSelectedShiftId(e.target.value as number)}
+              sx={{ borderRadius: '8px' }}
+            >
+              {shifts.filter(s => s.isActive).map((shift) => (
+                <MenuItem key={shift.id} value={shift.id}>
+                  {shift.name} ({shift.startTime.substring(0, 5)} - {shift.endTime.substring(0, 5)})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button
+            onClick={handleCloseAssignShiftDialog}
+            variant="outlined"
+            sx={{
+              borderRadius: '8px',
+              textTransform: 'none',
+            }}
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleAssignShift}
+            variant="contained"
+            disabled={!selectedShiftId || isAssigning}
+            sx={{
+              borderRadius: '8px',
+              textTransform: 'none',
+            }}
+          >
+            {isAssigning ? <CircularProgress size={20} color="inherit" /> : 'Xác Nhận'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
