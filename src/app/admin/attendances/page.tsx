@@ -28,6 +28,7 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
+  TablePagination,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -68,6 +69,11 @@ export default function AttendancesPage() {
   const [selectedShiftId, setSelectedShiftId] = useState<number | ''>('');
   const [isAssigning, setIsAssigning] = useState(false);
 
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(30);
+  const [totalElements, setTotalElements] = useState(0);
+
   const getShiftName = (shiftId: number | undefined) => {
     if (!shiftId) return null;
     const shift = shifts.find(s => s.id === shiftId);
@@ -81,11 +87,16 @@ export default function AttendancesPage() {
         startDate,
         endDate,
         userNames: selectedUserNames.length > 0 ? selectedUserNames.join(',') : undefined,
+        page,
+        size: rowsPerPage,
+        sort: 'id,desc',
       });
       if (response.data?.attendances) {
         setAttendances(response.data.attendances);
+        setTotalElements(response.data.totalElements);
       } else {
         setAttendances([]);
+        setTotalElements(0);
       }
     } catch (error: any) {
       console.error('Failed to fetch attendances:', error);
@@ -94,6 +105,7 @@ export default function AttendancesPage() {
         notifyError(errorMessage);
       }
       setAttendances([]);
+      setTotalElements(0);
     } finally {
       setLoading(false);
     }
@@ -148,7 +160,7 @@ export default function AttendancesPage() {
     if (employeesLoaded && shiftsLoaded) {
       fetchAttendances();
     }
-  }, [startDate, endDate, selectedUserNames, employeesLoaded, shiftsLoaded]);
+  }, [startDate, endDate, selectedUserNames, employeesLoaded, shiftsLoaded, page, rowsPerPage]);
 
   const handleCloseCamera = () => {
     setCameraOpen(false);
@@ -203,6 +215,15 @@ export default function AttendancesPage() {
     } finally {
       setIsAssigning(false);
     }
+  };
+
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   return (
@@ -382,6 +403,19 @@ export default function AttendancesPage() {
             )}
           </TableBody>
         </Table>
+        <TablePagination
+          rowsPerPageOptions={[30, 50]}
+          component="div"
+          count={totalElements}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          labelRowsPerPage="Số hàng mỗi trang:"
+          labelDisplayedRows={({from, to, count}) =>
+            `${from}-${to} trên tổng ${count !== -1 ? count : `nhiều hơn ${to}`}`
+          }
+        />
       </TableContainer>
 
       {/* Assign Shift Dialog */}

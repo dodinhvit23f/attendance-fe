@@ -17,7 +17,7 @@ import {
   IconButton,
   TextField,
   InputAdornment,
-  Pagination,
+  TablePagination,
   FormControlLabel,
   CircularProgress,
 } from '@mui/material';
@@ -40,32 +40,40 @@ export default function FacilitiesPage() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [selectedFacility, setSelectedFacility] = React.useState<FacilityData | null>(null);
-  const [page, setPage] = React.useState(1);
-  const pageSize = 10;
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(30);
+  const [totalElements, setTotalElements] = React.useState(0);
 
   const fetchFacilities = React.useCallback(async () => {
     try {
       setIsLoadingData(true);
-      const response = await getFacilities({ page: 0, size: 100 });
+      const response = await getFacilities({
+        page,
+        size: rowsPerPage,
+        sort: 'id,desc',
+      });
       setFacilities(response.data || []);
+      // API may not return totalElements, use array length as fallback
+      setTotalElements(response.data?.length || 0);
     } catch (error: any) {
       if (error instanceof Error) {
         const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể tải danh sách cơ sở');
         notifyError(errorMessage);
       }
       setFacilities([]);
+      setTotalElements(0);
     } finally {
       setIsLoadingData(false);
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [page, rowsPerPage]);
 
-  // Fetch facilities only on initial mount
+  // Fetch facilities when page or rowsPerPage changes
   React.useEffect(() => {
     fetchFacilities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [page, rowsPerPage]);
 
   const handleAddFacility = () => {
     setSelectedFacility(null);
@@ -134,25 +142,14 @@ export default function FacilitiesPage() {
     setSelectedFacility(null);
   };
 
-  const filteredFacilities = facilities.filter((facility) =>
-    facility.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    facility.address.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredFacilities.length / pageSize);
-  const startIndex = (page - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedFacilities = filteredFacilities.slice(startIndex, endIndex);
-
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-    setPage(value);
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
   };
 
-  // Reset to page 1 when search query changes
-  React.useEffect(() => {
-    setPage(1);
-  }, [searchQuery]);
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   return (
     <Box sx={{ width: '100%', p: 3 }}>
@@ -229,7 +226,7 @@ export default function FacilitiesPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedFacilities.length === 0 ? (
+              {facilities.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
                     <Stack spacing={2} alignItems="center">
@@ -256,7 +253,7 @@ export default function FacilitiesPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedFacilities.map((facility) => (
+                facilities.map((facility) => (
                   <TableRow
                     key={facility.id}
                     sx={{ '&:hover': { backgroundColor: '#F9F9F9' } }}
@@ -308,30 +305,20 @@ export default function FacilitiesPage() {
               )}
             </TableBody>
           </Table>
-        </TableContainer>
-      )}
-
-      {/* Pagination */}
-      {!isLoadingData && filteredFacilities.length > 0 && totalPages > 1 && (
-        <Stack spacing={2} alignItems="center" mt={3}>
-          <Typography variant="body2" color="text.secondary">
-            Hiển thị {startIndex + 1}-{Math.min(endIndex, filteredFacilities.length)} của {filteredFacilities.length} cơ sở
-          </Typography>
-          <Pagination
-            count={totalPages}
+          <TablePagination
+            rowsPerPageOptions={[30, 50]}
+            component="div"
+            count={totalElements}
+            rowsPerPage={rowsPerPage}
             page={page}
-            onChange={handlePageChange}
-            color="primary"
-            size="large"
-            showFirstButton
-            showLastButton
-            sx={{
-              '& .MuiPaginationItem-root': {
-                borderRadius: '8px',
-              },
-            }}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage="Số hàng mỗi trang:"
+            labelDisplayedRows={({from, to, count}) =>
+              `${from}-${to} trên tổng ${count !== -1 ? count : `nhiều hơn ${to}`}`
+            }
           />
-        </Stack>
+        </TableContainer>
       )}
 
       {/* Facility Dialog */}

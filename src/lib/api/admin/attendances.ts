@@ -15,6 +15,9 @@ export interface GetAttendancesParams {
   startDate: string; // Format: YYYY-MM-DD
   endDate: string;   // Format: YYYY-MM-DD
   userNames?: string; // Comma-separated usernames
+  page?: number;
+  size?: number;
+  sort?: string;
 }
 
 export interface AttendancesData {
@@ -43,6 +46,9 @@ export const getAttendances = async (params: GetAttendancesParams): Promise<GetA
   const queryParams = new URLSearchParams();
   queryParams.append('startDate', formatDateWithTimezone(params.startDate));
   queryParams.append('endDate', formatDateWithTimezone(params.endDate));
+  queryParams.append('page', (params.page ?? 0).toString());
+  queryParams.append('size', (params.size ?? 10).toString());
+  queryParams.append('sort', params.sort ?? 'id,desc');
   if (params.userNames) {
     queryParams.append('userNames', params.userNames);
   }

@@ -58,8 +58,9 @@ export interface UpdateFacilityResponse {
 }
 
 export interface GetFacilitiesParams {
-  page: number;
-  size: number;
+  page?: number;
+  size?: number;
+  sort?: string;
 }
 
 export interface GetFacilitiesResponse {
@@ -176,9 +177,9 @@ export const getFacilities = async (
   }
 
   const queryParams = new URLSearchParams({
-    page: params.page.toString(),
-    size: params.size.toString(),
-    sort: "id,asc"
+  page: (params.page ?? 0).toString(),
+    size: (params.size ?? 10).toString(),
+    sort: params.sort ?? 'id,desc',
   });
 
   const response = await fetch(

@@ -18,8 +18,9 @@ export interface Employee {
 }
 
 export interface GetEmployeesParams {
-  page: number;
-  size: number;
+  page?: number;
+  size?: number;
+  sort?: string;
   tenant: string;
 }
 
@@ -130,8 +131,9 @@ export const getEmployees = async (
   }
 
   const queryParams = new URLSearchParams({
-    page: params.page.toString(),
-    size: params.size.toString(),
+    page: (params.page ?? 0).toString(),
+    size: (params.size ?? 10).toString(),
+    sort: params.sort ?? 'id,desc',
     tenant: params.tenant,
   });
 

@@ -20,6 +20,7 @@ import {
   Checkbox,
   ListItemText,
   OutlinedInput,
+  TablePagination,
 } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { useCallback, useEffect, useState } from 'react';
@@ -38,6 +39,11 @@ export default function ManagerUsersPage() {
   const [employees, setEmployees] = useState<ManagerEmployee[]>([]);
   const [facilities, setFacilities] = useState<ManagerFacility[]>([]);
   const [selectedFacilityIds, setSelectedFacilityIds] = useState<number[]>([]);
+
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(30);
+  const [totalElements, setTotalElements] = useState(0);
 
   // Fetch facilities
   useEffect(() => {
@@ -72,12 +78,17 @@ export default function ManagerUsersPage() {
       setLoading(true);
       const response = await getManagerUsers({
         facilityIds: selectedFacilityIds.length > 0 ? selectedFacilityIds : undefined,
+        page,
+        size: rowsPerPage,
+        sort: 'id,desc',
       });
       if (Array.isArray(response.data.employees)) {
         setEmployees(response.data.employees);
+        setTotalElements(response.data.totalElements);
       } else {
         console.error('Invalid response format: employees is not an array', response);
         setEmployees([]);
+        setTotalElements(0);
       }
     } catch (error: any) {
       console.error('Failed to fetch employees:', error);
@@ -89,10 +100,11 @@ export default function ManagerUsersPage() {
         notifyError(errorMessage);
       }
       setEmployees([]);
+      setTotalElements(0);
     } finally {
       setLoading(false);
     }
-  }, [selectedFacilityIds, setLoading, notifyError]);
+  }, [selectedFacilityIds, page, rowsPerPage, setLoading, notifyError]);
 
   useEffect(() => {
     fetchEmployees();
@@ -101,6 +113,15 @@ export default function ManagerUsersPage() {
   const handleFacilityChange = (event: any) => {
     const value = event.target.value;
     setSelectedFacilityIds(typeof value === 'string' ? value.split(',').map(Number) : value);
+  };
+
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   return (
@@ -201,6 +222,19 @@ export default function ManagerUsersPage() {
             )}
           </TableBody>
         </Table>
+        <TablePagination
+          rowsPerPageOptions={[30, 50]}
+          component="div"
+          count={totalElements}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          labelRowsPerPage="Số hàng mỗi trang:"
+          labelDisplayedRows={({from, to, count}) =>
+            `${from}-${to} trên tổng ${count !== -1 ? count : `nhiều hơn ${to}`}`
+          }
+        />
       </TableContainer>
     </Box>
   );

@@ -18,6 +18,9 @@ export interface ManagerEmployee {
 
 export interface GetManagerUsersParams {
   facilityIds?: number[];
+  page?: number;
+  size?: number;
+  sort?: string;
 }
 
 export interface GetManagerUsersResponse {
@@ -46,6 +49,11 @@ export const getManagerUsers = async (
   }
 
   const queryParams = new URLSearchParams();
+
+  // Add pagination parameters
+  queryParams.append('page', (params?.page ?? 0).toString());
+  queryParams.append('size', (params?.size ?? 10).toString());
+  queryParams.append('sort', params?.sort ?? 'id,desc');
 
   // Add facility IDs if provided
   if (params?.facilityIds && params.facilityIds.length > 0) {

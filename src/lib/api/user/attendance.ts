@@ -74,9 +74,16 @@ export const recordUserAttendance = async (
   return response.json();
 };
 
+export interface GetUserAttendancesParams {
+  startDate: string;
+  endDate: string;
+  page?: number;
+  size?: number;
+  sort?: string;
+}
+
 export const getUserAttendances = async (
-  startDate: string,
-  endDate: string
+  params: GetUserAttendancesParams
 ): Promise<GetUserAttendancesResponse> => {
   const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
 
@@ -85,8 +92,11 @@ export const getUserAttendances = async (
   }
 
   const url = new URL(process.env.NEXT_PUBLIC_API_USER_ATTENDANCES!);
-  url.searchParams.append('startDate', formatDateWithTimezone(startDate));
-  url.searchParams.append('endDate', formatDateWithTimezone(endDate));
+  url.searchParams.append('startDate', formatDateWithTimezone(params.startDate));
+  url.searchParams.append('endDate', formatDateWithTimezone(params.endDate));
+  url.searchParams.append('page', (params.page ?? 0).toString());
+  url.searchParams.append('size', (params.size ?? 10).toString());
+  url.searchParams.append('sort', params.sort ?? 'id,desc');
 
   const response = await fetch(url.toString(), {
     method: 'GET',

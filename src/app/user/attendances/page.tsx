@@ -21,6 +21,7 @@ import {
   IconButton,
   Tooltip,
   Divider,
+  TablePagination,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
@@ -66,13 +67,25 @@ export default function UserAttendancesPage() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const { setLoading } = useLoading();
 
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(30);
+  const [totalElements, setTotalElements] = useState(0);
+
   // Fetch attendances
   const fetchAttendances = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await getUserAttendances(startDate, endDate);
+      const response = await getUserAttendances({
+        startDate,
+        endDate,
+        page,
+        size: rowsPerPage,
+        sort: 'id,desc',
+      });
       if (response.data?.attendances) {
         setAttendances(response.data.attendances);
+        setTotalElements(response.data.totalElements);
       }
     } catch (error) {
       console.error('Failed to fetch attendances:', error);
@@ -80,7 +93,7 @@ export default function UserAttendancesPage() {
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate]);
+  }, [startDate, endDate, page, rowsPerPage]);
 
   // Fetch facilities and attendances on page load
   useEffect(() => {
@@ -315,6 +328,15 @@ export default function UserAttendancesPage() {
     }
   };
 
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   return (
     <Box sx={{ width: '100%', p: { xs: 1.5, sm: 2, md: 3 }, maxWidth: '100%', overflow: 'hidden' }}>
       {/* Header */}
@@ -414,6 +436,19 @@ export default function UserAttendancesPage() {
             )}
           </TableBody>
         </Table>
+        <TablePagination
+          rowsPerPageOptions={[10, 30, 50]}
+          component="div"
+          count={totalElements}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          labelRowsPerPage="Số hàng mỗi trang:"
+          labelDisplayedRows={({from, to, count}) =>
+            `${from}-${to} trên tổng ${count !== -1 ? count : `nhiều hơn ${to}`}`
+          }
+        />
       </TableContainer>
 
       {/* Attendance Dialog */}
