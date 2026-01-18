@@ -173,7 +173,7 @@ export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
             width: '100% !important',
           },
           '& #qr-shaded-region': {
-            borderColor: '#4caf50 !important',
+
           },
         }}
       />
