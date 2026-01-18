@@ -263,7 +263,6 @@ export const ShiftDialog: React.FC<ShiftDialogProps> = ({open, onClose}) => {
                   startIcon={<AddIcon/>}
                   onClick={handleCreate}
                   sx={{
-                    borderRadius: '8px',
                     textTransform: 'none',
                   }}
               >
@@ -385,7 +384,6 @@ export const ShiftDialog: React.FC<ShiftDialogProps> = ({open, onClose}) => {
                 placeholder="VD: Ca sáng, Ca chiều"
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: '8px',
                   },
                 }}
             />
@@ -409,8 +407,7 @@ export const ShiftDialog: React.FC<ShiftDialogProps> = ({open, onClose}) => {
                   }}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: '8px',
-                    },
+                      },
                   }}
               />
 
@@ -432,8 +429,7 @@ export const ShiftDialog: React.FC<ShiftDialogProps> = ({open, onClose}) => {
                   }}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: '8px',
-                    },
+                      },
                   }}
               />
             </Stack>
@@ -445,7 +441,6 @@ export const ShiftDialog: React.FC<ShiftDialogProps> = ({open, onClose}) => {
               onClick={handleBack}
               variant="outlined"
               sx={{
-                borderRadius: '8px',
                 textTransform: 'none',
                 px: 3,
               }}
@@ -460,7 +455,6 @@ export const ShiftDialog: React.FC<ShiftDialogProps> = ({open, onClose}) => {
                 isSubmitting ? <CircularProgress size={20} color="inherit"/> : <SaveIcon/>
               }
               sx={{
-                borderRadius: '8px',
                 textTransform: 'none',
                 px: 3,
               }}
@@ -477,13 +471,6 @@ export const ShiftDialog: React.FC<ShiftDialogProps> = ({open, onClose}) => {
           onClose={handleClose}
           maxWidth="md"
           fullWidth
-          slotProps={{
-            paper: {
-              sx: {
-                borderRadius: '12px',
-              },
-            },
-          }}
       >
         {viewMode === 'list' ? renderListView() : renderFormView()}
       </Dialog>

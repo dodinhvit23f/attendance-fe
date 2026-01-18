@@ -152,15 +152,23 @@ export default function FacilitiesPage() {
   };
 
   return (
-    <Box sx={{ width: '100%', p: 3 }}>
+    <Box sx={{ width: '100%', p: { xs: 1.5, sm: 2, md: 3 } }}>
       {/* Header */}
       <Stack
-        direction="row"
+        direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
-        alignItems="center"
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        spacing={2}
         mb={3}
       >
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+        <Typography
+          variant="h4"
+          component="h1"
+          sx={{
+            fontWeight: 600,
+            fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' }
+          }}
+        >
           Quản Lý Cơ Sở
         </Typography>
         <Button
@@ -168,9 +176,8 @@ export default function FacilitiesPage() {
           startIcon={<AddIcon />}
           onClick={handleAddFacility}
           sx={{
-            borderRadius: '8px',
-            textTransform: 'none',
-            px: 3,
+            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            width: { xs: '100%', sm: 'auto' }
           }}
         >
           Thêm Cơ Sở
@@ -194,10 +201,7 @@ export default function FacilitiesPage() {
             },
           }}
           sx={{
-            maxWidth: 500,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '8px',
-            },
+            maxWidth: { xs: '100%', sm: 500 },
           }}
         />
       </Box>
@@ -215,12 +219,12 @@ export default function FacilitiesPage() {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
-                <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Tên Cơ Sở</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Địa Chỉ</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Phạm Vi (m)</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Trạng Thái</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="right">
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' }}}>ID</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Tên Cơ Sở</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Địa Chỉ</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>Phạm Vi (m)</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' }}}>Trạng Thái</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}} align="right">
                   Thao Tác
                 </TableCell>
               </TableRow>
@@ -242,8 +246,7 @@ export default function FacilitiesPage() {
                         startIcon={<AddIcon />}
                         onClick={handleAddFacility}
                         sx={{
-                          borderRadius: '8px',
-                          textTransform: 'none',
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
                           mt: 1,
                         }}
                       >
@@ -258,20 +261,20 @@ export default function FacilitiesPage() {
                     key={facility.id}
                     sx={{ '&:hover': { backgroundColor: '#F9F9F9' } }}
                   >
-                    <TableCell>{facility.id}</TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' }}}>{facility.id}</TableCell>
                     <TableCell>
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <LocationOnIcon fontSize="small" color="action" />
-                        <Typography>{facility.name}</Typography>
+                        <Typography sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{facility.name}</Typography>
                       </Stack>
                     </TableCell>
-                    <TableCell sx={{ maxWidth: 300 }}>
+                    <TableCell sx={{ maxWidth: 300, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>
                       {facility.address}
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>
                       {facility.allowDistance}
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }}}>
                       <FormControlLabel
                         control={
                           <Switch
@@ -285,7 +288,7 @@ export default function FacilitiesPage() {
                         label={togglingId === facility.id ? 'Đang cập nhật...' : (facility.active ? 'Hoạt động' : 'Ngừng')}
                         sx={{
                           '& .MuiFormControlLabel-label': {
-                            fontSize: '0.875rem',
+                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
                             color: togglingId === facility.id ? 'text.disabled' : (facility.active ? 'success.main' : 'text.secondary'),
                           },
                         }}

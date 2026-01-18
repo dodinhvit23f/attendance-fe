@@ -239,15 +239,23 @@ export default function EmployeesPage() {
   }
 
   return (
-      <Box sx={{width: '100%', p: 3}}>
+      <Box sx={{width: '100%', p: { xs: 1.5, sm: 2, md: 3 }}}>
         {/* Header */}
         <Stack
-            direction="row"
+            direction={{ xs: 'column', sm: 'row' }}
             justifyContent="space-between"
-            alignItems="center"
+            alignItems={{ xs: 'flex-start', sm: 'center' }}
+            spacing={2}
             mb={3}
         >
-          <Typography variant="h4" component="h1" sx={{fontWeight: 600}}>
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{
+              fontWeight: 600,
+              fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' }
+            }}
+          >
             Quản Lý Nhân Viên
           </Typography>
           <Button
@@ -255,9 +263,8 @@ export default function EmployeesPage() {
               startIcon={<AddIcon/>}
               onClick={handleAddEmployee}
               sx={{
-                borderRadius: '8px',
-                textTransform: 'none',
-                px: 3,
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                width: { xs: '100%', sm: 'auto' }
               }}
           >
             Thêm Nhân Viên
@@ -288,10 +295,7 @@ export default function EmployeesPage() {
                 },
               }}
               sx={{
-                maxWidth: 500,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                },
+                maxWidth: { xs: '100%', sm: 500 },
               }}
           />
         </Box>
@@ -301,15 +305,15 @@ export default function EmployeesPage() {
           <Table>
             <TableHead>
               <TableRow sx={{backgroundColor: '#F5F5F5'}}>
-                <TableCell sx={{fontWeight: 600}}>Mã NV</TableCell>
-                <TableCell sx={{fontWeight: 600}}>Họ Tên</TableCell>
-                <TableCell sx={{fontWeight: 600}}>Email</TableCell>
-                <TableCell sx={{fontWeight: 600}}>Ngày Sinh</TableCell>
-                <TableCell sx={{fontWeight: 600}}>Giới Tính</TableCell>
-                <TableCell sx={{fontWeight: 600}}>Ca Làm</TableCell>
-                <TableCell sx={{fontWeight: 600}}>Vai Trò</TableCell>
-                <TableCell sx={{fontWeight: 600}}>Trạng Thái</TableCell>
-                <TableCell sx={{fontWeight: 600}} align="right">
+                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Mã NV</TableCell>
+                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Họ Tên</TableCell>
+                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>Email</TableCell>
+                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' }}}>Ngày Sinh</TableCell>
+                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>Giới Tính</TableCell>
+                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Ca Làm</TableCell>
+                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Vai Trò</TableCell>
+                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' }}}>Trạng Thái</TableCell>
+                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}} align="right">
                   Thao Tác
                 </TableCell>
               </TableRow>
@@ -330,9 +334,7 @@ export default function EmployeesPage() {
                             startIcon={<AddIcon/>}
                             onClick={handleAddEmployee}
                             sx={{
-                              borderRadius: '8px',
-                              textTransform: 'none',
-                              px: 3,
+                              fontSize: { xs: '0.75rem', sm: '0.875rem' }
                             }}
                         >
                           Thêm Nhân Viên
@@ -346,16 +348,16 @@ export default function EmployeesPage() {
                           key={employee.id}
                           sx={{'&:hover': {backgroundColor: '#F9F9F9'}}}
                       >
-                        <TableCell>{employee.employeeId}</TableCell>
-                        <TableCell>{employee.fullName}</TableCell>
-                        <TableCell>{employee.email}</TableCell>
-                        <TableCell>{employee.dateOfBirth}</TableCell>
-                        <TableCell>
+                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{employee.employeeId}</TableCell>
+                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{employee.fullName}</TableCell>
+                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>{employee.email}</TableCell>
+                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' }}}>{employee.dateOfBirth}</TableCell>
+                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>
                           {employee.gender === 'MALE' ? 'Nam' : employee.gender === 'FEMALE' ? 'Nữ' : 'Khác'}
                         </TableCell>
-                        <TableCell>{getShiftName(employee)}</TableCell>
-                        <TableCell>{getEmployeeRoleName(employee)}</TableCell>
-                        <TableCell>
+                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{getShiftName(employee)}</TableCell>
+                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{getEmployeeRoleName(employee)}</TableCell>
+                        <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }}}>
                           <Stack direction="row" alignItems="center" spacing={1}>
                             <Switch
                                 checked={employee.active}
@@ -364,7 +366,7 @@ export default function EmployeesPage() {
                                 size="small"
                                 disabled={togglingId === employee.id}
                             />
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>
                               {togglingId === employee.id ? 'Đang cập nhật...' : (employee.active ? 'Hoạt động' : 'Ngừng hoạt động')}
                             </Typography>
                           </Stack>

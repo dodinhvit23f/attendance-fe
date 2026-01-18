@@ -8,7 +8,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { theme } from '@/components/root/client-layout';
+import { theme } from '@/theme';
 
 // Navigation configuration for user
 const NAVIGATION: Navigation = [

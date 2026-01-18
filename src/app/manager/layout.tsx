@@ -8,7 +8,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import PeopleIcon from '@mui/icons-material/People';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { theme } from '@/components/root/client-layout';
+import { theme } from '@/theme';
 
 // Navigation configuration for manager
 const NAVIGATION: Navigation = [

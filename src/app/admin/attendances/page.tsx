@@ -227,15 +227,23 @@ export default function AttendancesPage() {
   };
 
   return (
-    <Box sx={{ width: '100%', p: 3 }}>
+    <Box sx={{ width: '100%', p: { xs: 1.5, sm: 2, md: 3 } }}>
       {/* Header */}
       <Stack
-        direction="row"
+        direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
-        alignItems="center"
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        spacing={2}
         mb={3}
       >
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+        <Typography
+          variant="h4"
+          component="h1"
+          sx={{
+            fontWeight: 600,
+            fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' }
+          }}
+        >
           Quản Lý Chấm Công
         </Typography>
         <Button
@@ -243,9 +251,8 @@ export default function AttendancesPage() {
           startIcon={<ScheduleIcon />}
           onClick={() => setShiftDialogOpen(true)}
           sx={{
-            borderRadius: '8px',
-            textTransform: 'none',
-            px: 3,
+            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            width: { xs: '100%', sm: 'auto' }
           }}
         >
           Ca Làm Việc
@@ -253,7 +260,7 @@ export default function AttendancesPage() {
       </Stack>
 
       {/* Filters */}
-      <Stack direction="row" spacing={2} mb={3} flexWrap="wrap">
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={3} flexWrap="wrap">
         <TextField
           label="Ngày bắt đầu"
           type="date"
@@ -265,10 +272,7 @@ export default function AttendancesPage() {
             },
           }}
           sx={{
-            minWidth: 200,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '8px',
-            },
+            minWidth: { xs: '100%', sm: 200 },
           }}
         />
 
@@ -283,14 +287,11 @@ export default function AttendancesPage() {
             },
           }}
           sx={{
-            minWidth: 200,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '8px',
-            },
+            minWidth: { xs: '100%', sm: 200 },
           }}
         />
 
-        <FormControl sx={{ minWidth: 250 }}>
+        <FormControl sx={{ minWidth: { xs: '100%', sm: 250 } }}>
           <InputLabel>Nhân viên</InputLabel>
           <Select
             multiple
@@ -298,7 +299,6 @@ export default function AttendancesPage() {
             onChange={handleUserNameChange}
             input={<OutlinedInput label="Nhân viên" />}
             renderValue={(selected) => selected.join(', ')}
-            sx={{ borderRadius: '8px' }}
           >
             {activeEmployees && activeEmployees.map((employee) => (
               <MenuItem key={employee.userName} value={employee.userName}>
@@ -309,13 +309,12 @@ export default function AttendancesPage() {
           </Select>
         </FormControl>
 
-        <FormControl sx={{ minWidth: 150 }}>
+        <FormControl sx={{ minWidth: { xs: '100%', sm: 150 } }}>
           <InputLabel>Trạng thái</InputLabel>
           <Select
             value={statusFilter}
             label="Trạng thái"
             onChange={(e) => setStatusFilter(e.target.value)}
-            sx={{ borderRadius: '8px' }}
           >
             <MenuItem value="all">Tất cả</MenuItem>
             <MenuItem value="present">Có mặt</MenuItem>
@@ -330,12 +329,12 @@ export default function AttendancesPage() {
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
-              <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Nhân Viên</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Ngày</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Giờ Vào</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Giờ Ra</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Ca</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' }}}>ID</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Nhân Viên</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Ngày</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Giờ Vào</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>Giờ Ra</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Ca</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -358,24 +357,24 @@ export default function AttendancesPage() {
                   key={attendance.id}
                   sx={{ '&:hover': { backgroundColor: '#F9F9F9' } }}
                 >
-                  <TableCell>{attendance.id}</TableCell>
-                  <TableCell>{attendance.fullName}</TableCell>
-                  <TableCell>{parseDate(attendance.checkInDate).format('DD/MM/YYYY')}</TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' }}}>{attendance.id}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{attendance.fullName}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{parseDate(attendance.checkInDate).format('DD/MM/YYYY')}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>
                     {attendance.checkIn ? (
                       <Chip label={parseDateTime(attendance.checkIn).format('HH:mm')} size="small" variant="outlined" />
                     ) : (
                       '-'
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>
                     {attendance.checkOut ? (
                       <Chip label={parseDateTime(attendance.checkOut).format('HH:mm')} size="small" variant="outlined" />
                     ) : (
                       '-'
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>
                     {attendance.shiftId ? (
                       <Chip
                         label={getShiftName(attendance.shiftId) || `Ca ${attendance.shiftId}`}
@@ -389,9 +388,7 @@ export default function AttendancesPage() {
                         variant="outlined"
                         onClick={() => handleOpenAssignShiftDialog(attendance)}
                         sx={{
-                          borderRadius: '8px',
-                          textTransform: 'none',
-                          fontSize: '0.75rem',
+                          fontSize: { xs: '0.65rem', sm: '0.75rem' },
                         }}
                       >
                         Phân Ca
@@ -424,13 +421,6 @@ export default function AttendancesPage() {
         onClose={handleCloseAssignShiftDialog}
         maxWidth="xs"
         fullWidth
-        slotProps={{
-          paper: {
-            sx: {
-              borderRadius: '12px',
-            },
-          },
-        }}
       >
         <DialogTitle sx={{ fontWeight: 600 }}>
           Phân Ca Làm Việc
@@ -448,7 +438,6 @@ export default function AttendancesPage() {
               value={selectedShiftId}
               label="Chọn Ca"
               onChange={(e) => setSelectedShiftId(e.target.value as number)}
-              sx={{ borderRadius: '8px' }}
             >
               {shifts.filter(s => s.isActive).map((shift) => (
                 <MenuItem key={shift.id} value={shift.id}>
@@ -462,10 +451,6 @@ export default function AttendancesPage() {
           <Button
             onClick={handleCloseAssignShiftDialog}
             variant="outlined"
-            sx={{
-              borderRadius: '8px',
-              textTransform: 'none',
-            }}
           >
             Hủy
           </Button>
@@ -473,10 +458,6 @@ export default function AttendancesPage() {
             onClick={handleAssignShift}
             variant="contained"
             disabled={!selectedShiftId || isAssigning}
-            sx={{
-              borderRadius: '8px',
-              textTransform: 'none',
-            }}
           >
             {isAssigning ? <CircularProgress size={20} color="inherit" /> : 'Xác Nhận'}
           </Button>

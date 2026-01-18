@@ -307,13 +307,6 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
       onClose={handleClose}
       maxWidth="md"
       fullWidth
-      slotProps={{
-        paper: {
-          sx: {
-            borderRadius: '12px',
-          },
-        },
-      }}
     >
       <DialogTitle sx={{ pb: 1 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -353,11 +346,6 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
                 error={!!errors.name}
                 helperText={errors.name}
                 placeholder="VD: Nguyễn Văn A"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '8px',
-                  },
-                }}
               />
 
               {/* Phone Number */}
@@ -369,11 +357,6 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
                 error={!!errors.phoneNumber}
                 helperText={errors.phoneNumber}
                 placeholder="VD: 0123456789"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '8px',
-                  },
-                }}
               />
 
               {/* Email */}
@@ -386,11 +369,6 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
                 error={!!errors.email}
                 helperText={errors.email}
                 placeholder="VD: nguyenvana@example.com"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '8px',
-                  },
-                }}
               />
 
               {/* Date of Birth */}
@@ -428,11 +406,6 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
                 error={!!errors.address}
                 helperText={errors.address}
                 placeholder="VD: 123 Đường Láng, Đống Đa, Hà Nội"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '8px',
-                  },
-                }}
               />
 
               {/* Gender */}
@@ -442,7 +415,6 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
                   value={formData.gender}
                   label="Giới Tính *"
                   onChange={(e) => handleChange('gender', e.target.value)}
-                  sx={{ borderRadius: '8px' }}
                 >
                   <MenuItem value="male">Nam</MenuItem>
                   <MenuItem value="female">Nữ</MenuItem>
@@ -470,7 +442,6 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
                   value={formData.role}
                   label="Vai Trò *"
                   onChange={(e) => handleChange('role', e.target.value)}
-                  sx={{ borderRadius: '8px' }}
                 >
                   {roles.map((role) => (
                     <MenuItem key={role.name} value={role.name}>
@@ -488,7 +459,6 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
                   value={formData.facilityIds}
                   label="Cơ Sở Làm Việc"
                   onChange={(e) => handleChange('facilityIds', e.target.value)}
-                  sx={{ borderRadius: '8px' }}
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((id) => {
@@ -499,7 +469,6 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
                             label={facility?.name}
                             size="small"
                             icon={<BusinessIcon />}
-                            sx={{ borderRadius: '6px' }}
                           />
                         );
                       })}
@@ -525,7 +494,6 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
                     const value = e.target.value;
                     handleChange('shiftId', value === '' ? null : Number(value));
                   }}
-                  sx={{ borderRadius: '8px' }}
                 >
                   <MenuItem value="">
                     <em>Không chọn</em>
@@ -562,11 +530,6 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
                     ),
                   },
                 }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '8px',
-                  },
-                }}
               />
             </Stack>
           </Box>
@@ -579,11 +542,6 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
           onClick={handleClose}
           variant="outlined"
           disabled={loading}
-          sx={{
-            borderRadius: '8px',
-            textTransform: 'none',
-            px: 3,
-          }}
         >
           Hủy
         </Button>
@@ -592,11 +550,6 @@ export const UpdateEmployeeDialog: React.FC<UpdateEmployeeDialogProps> = ({
           variant="contained"
           disabled={loading}
           startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-          sx={{
-            borderRadius: '8px',
-            textTransform: 'none',
-            px: 3,
-          }}
         >
           Cập Nhật
         </Button>

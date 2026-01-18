@@ -9,7 +9,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import BusinessIcon from '@mui/icons-material/Business';
 import LogoutIcon from '@mui/icons-material/Logout';
-import {theme} from "@/components/root/client-layout";
+import {theme} from "@/theme";
 
 // Navigation configuration
 const NAVIGATION: Navigation = [

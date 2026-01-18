@@ -352,13 +352,6 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
       onClose={handleClose}
       maxWidth="md"
       fullWidth
-      slotProps={{
-        paper: {
-          sx: {
-            borderRadius: '12px',
-          },
-        },
-      }}
     >
       <DialogTitle sx={{ pb: 1 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -384,7 +377,6 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
             placeholder="VD: Văn phòng Hà Nội"
             sx={{
               '& .MuiOutlinedInput-root': {
-                borderRadius: '8px',
               },
             }}
           />
@@ -405,7 +397,6 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
             placeholder="VD: 123 Đường Láng, Đống Đa, Hà Nội"
             sx={{
               '& .MuiOutlinedInput-root': {
-                borderRadius: '8px',
               },
             }}
             slotProps={{
@@ -433,7 +424,6 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
               value={formData.status}
               label="Trạng Thái"
               onChange={(e) => handleChange('status', e.target.value)}
-              sx={{ borderRadius: '8px' }}
             >
               <MenuItem value="active">Hoạt động</MenuItem>
               <MenuItem value="inactive">Ngừng hoạt động</MenuItem>
@@ -452,7 +442,6 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
             inputProps={{ min: 0, step: 10 }}
             sx={{
               '& .MuiOutlinedInput-root': {
-                borderRadius: '8px',
               },
             }}
           />
@@ -470,8 +459,7 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
               inputProps={{ step: 'any' }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                },
+                  },
               }}
             />
 
@@ -486,8 +474,7 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
               inputProps={{ step: 'any' }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                },
+                  },
               }}
             />
           </Stack>
@@ -496,7 +483,6 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
           <Box sx={{
             p: 2,
             bgcolor: 'primary.50',
-            borderRadius: '8px',
             border: '1px solid',
             borderColor: 'primary.200'
           }}>
@@ -512,8 +498,7 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
                   onClick={handleGetMyLocation}
                   disabled={isGettingLocation}
                   sx={{
-                    borderRadius: '8px',
-                    textTransform: 'none'
+                        textTransform: 'none'
                   }}
                 >
                   {isGettingLocation ? 'Đang lấy...' : userLocation ? 'Làm mới' : 'Lấy Vị Trí Của Tôi'}
@@ -591,7 +576,6 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
           onClick={handleClose}
           variant="outlined"
           sx={{
-            borderRadius: '8px',
             textTransform: 'none',
             px: 3,
           }}
@@ -604,7 +588,6 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
           disabled={isSubmitting}
           startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
           sx={{
-            borderRadius: '8px',
             textTransform: 'none',
             px: 3,
           }}
