@@ -186,7 +186,14 @@ export default function AttendancesPage() {
       await assignShiftToAttendance(selectedAttendance.id, selectedShiftId);
       notifySuccess('Phân ca thành công!');
       handleCloseAssignShiftDialog();
-      //fetchAttendances();
+      // Update local state instead of reloading
+      setAttendances((prevAttendances) =>
+        prevAttendances.map((attendance) =>
+          attendance.id === selectedAttendance.id
+            ? { ...attendance, shiftId: selectedShiftId as number }
+            : attendance
+        )
+      );
     } catch (error: any) {
       console.error('Failed to assign shift:', error);
       if (error instanceof Error) {
