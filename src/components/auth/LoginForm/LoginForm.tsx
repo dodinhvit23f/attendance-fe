@@ -6,7 +6,7 @@ import {Visibility, VisibilityOff} from '@mui/icons-material';
 import {useLoading} from "@/components/root/client-layout";
 import {loginApi} from "@/lib/api/auth";
 import {useNotify} from "@/components/notification/NotificationProvider";
-import {useRouter} from "next/navigation";
+import {useRouter, useSearchParams} from "next/navigation";
 import {STORAGE_KEYS} from '@/lib/constants/storage';
 import {ErrorMessage} from "@/lib/constants";
 
@@ -23,6 +23,7 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
   const {setLoading} = useLoading()
   const {notifySuccess, notifyError} = useNotify();
   const router = useRouter()
+  const searchParams = useSearchParams();
 
   const handleGoogleLogin = () => {
 
@@ -32,7 +33,13 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    loginApi(email, password)
+
+    const platform = searchParams.get('platform');
+    if (platform) {
+      localStorage.setItem(STORAGE_KEYS.TENANT, platform);
+    }
+
+    loginApi(email, password, platform || undefined)
     .then((response) => {
       notifySuccess("Đăng nhập thành công")
       localStorage.setItem(STORAGE_KEYS.OTP_TOKEN, response.data.otpToken)

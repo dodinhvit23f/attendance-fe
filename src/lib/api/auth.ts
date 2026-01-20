@@ -1,6 +1,10 @@
 import { STORAGE_KEYS } from '@/lib/constants/storage';
 import { ApiErrorResponse, getErrorCode } from './types';
 
+const getTenant = (): string => {
+  return localStorage.getItem(STORAGE_KEYS.TENANT) || 'attendance';
+};
+
 interface RefreshTokenResponse {
   traceId: string;
   data: {
@@ -58,6 +62,7 @@ export const clearAuthStorage = () => {
   localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
   localStorage.removeItem(STORAGE_KEYS.ROLES);
   localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
+  localStorage.removeItem(STORAGE_KEYS.TENANT);
 };
 
 interface LoginRequest {
@@ -112,7 +117,8 @@ interface OtpVerifyResponse {
 
 export const loginApi = async (
   email: string,
-  password: string
+  password: string,
+  tenant?: string
 ): Promise<LoginResponse> => {
   const response = await fetch(process.env.NEXT_PUBLIC_API_LOGIN!, {
     method: 'POST',
@@ -122,7 +128,7 @@ export const loginApi = async (
     body: JSON.stringify({
       username: email,
       password: password,
-      tenant: 'attendance',
+      tenant: tenant || getTenant(),
     } as LoginRequest),
   });
 
@@ -148,7 +154,7 @@ export const otpLoginApi = async (otp: string): Promise<OtpLoginResponse> => {
     },
     body: JSON.stringify({
       otp,
-      tenant: 'attendance',
+      tenant: getTenant(),
     } as OtpLoginRequest),
   });
 
@@ -174,7 +180,7 @@ export const otpGenerateApi = async (): Promise<OtpGenerateResponse> => {
       'Authorization': otpToken,
     },
     body: JSON.stringify({
-      tenant: 'attendance',
+      tenant: getTenant(),
     } as OtpGenerateRequest),
   });
 
@@ -201,7 +207,7 @@ export const otpVerifyApi = async (otp: string): Promise<OtpVerifyResponse> => {
     },
     body: JSON.stringify({
       otp,
-      tenant: 'attendance',
+      tenant: getTenant(),
     } as OtpVerifyRequest),
   });
 

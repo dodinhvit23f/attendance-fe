@@ -7,4 +7,5 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: 'refreshToken',
   ROLES: 'roles',
   OTP_TOKEN: 'OTP_TOKEN',
+  TENANT: 'tenant',
 } as const;

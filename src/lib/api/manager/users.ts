@@ -85,3 +85,45 @@ export const getManagerUsers = async (
 
   return response.json();
 };
+
+/**
+ * Update employee status (toggle active/inactive)
+ * @param id - Employee ID
+ * @param version - Current version for optimistic locking
+ * @returns Promise with update result
+ */
+export const updateManagerEmployeeStatus = async (
+  id: number,
+  version: number
+): Promise<{ traceId: string; data: boolean }> => {
+  const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+
+  if (!accessToken) {
+    throw new Error('Access token not found. Please login first.');
+  }
+
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_MANAGER_USERS}/${id}/status`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        Referer: window.location.origin,
+      },
+      body: JSON.stringify({ version }),
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      const unauthorizedError = new Error('Unauthorized. Please login again.');
+      (unauthorizedError as any).status = 401;
+      throw unauthorizedError;
+    }
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to update employee status'));
+  }
+
+  return response.json();
+};
