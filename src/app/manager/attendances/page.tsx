@@ -511,7 +511,7 @@ export default function ManagerAttendancesPage() {
                 <TableRow key={attendance.id}>
                   <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{attendance.id}</TableCell>
                   <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, maxWidth: { xs: 80, sm: 'none' }, overflow: 'hidden', textOverflow: 'ellipsis' }}>{attendance.fullName}</TableCell>
-                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>{parseDate(attendance.checkInDate).format('DD/MM')}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>{parseDate(attendance.checkInDate).format('DD/MM/YYYY')}</TableCell>
                   <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{parseDateTime(attendance.checkIn).format('HH:mm')}</TableCell>
                   <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                     {attendance.checkOut ? parseDateTime(attendance.checkOut).format('HH:mm') : '-'}
