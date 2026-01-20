@@ -1,6 +1,6 @@
 "use client"
 import * as React from "react";
-import {createContext, useContext, useState} from "react";
+import {createContext, Suspense, useContext, useState} from "react";
 import {Box, CssBaseline, ThemeProvider} from "@mui/material";
 
 import {LoadingScreen} from "@/components/auth/LoadingScreen/loading-screen";
@@ -32,7 +32,9 @@ export default function ClientLayout({children}: { children: React.ReactNode; })
                 }}
               >
                 {isLoading ? <LoadingScreen/> : <></>}
+                <Suspense fallback={null}>
                 {children}
+                </Suspense>
               </Box>
             </AuthProvider>
           </LoadingContext.Provider>
