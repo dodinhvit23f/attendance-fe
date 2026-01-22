@@ -29,6 +29,7 @@ export class ErrorMessage {
   public static readonly USER_NAME_IS_REQUIRED = 'ERROR_AUTH_023';
   public static readonly USER_PASSWORD_IS_REQUIRED = 'ERROR_AUTH_024';
   public static readonly USER_PASSWORD_MIN_REQUIRED = 'ERROR_AUTH_025';
+  public static readonly TENANT_NOT_FOUND = 'ERROR_AUTH_026';
 
   // Facility Error Codes
   public static readonly FACILITY_NOT_FOUND = 'ERROR_FACILITY_001';
@@ -60,12 +61,12 @@ export class ErrorMessage {
 
   // Attendance Error Codes
   public static readonly ATTENDANCE_NOT_FOUND = 'ERROR_ATTENDANCE_001';
-  public static readonly QR_CODE_INVALID = 'ERROR_ATTENDANCE_002';
+  public static readonly NOT_IN_ALLOWED_DISTANCE = 'ERROR_ATTENDANCE_002';
   public static readonly QR_CODE_EXPIRED = 'ERROR_ATTENDANCE_003';
-  public static readonly ALREADY_CHECKED_IN = 'ERROR_ATTENDANCE_004';
-  public static readonly NOT_CHECKED_IN_YET = 'ERROR_ATTENDANCE_005';
-  public static readonly USERNAME_MISMATCH = 'ERROR_ATTENDANCE_006';
-  public static readonly CHECK_IN_DATE_REQUIRED = 'ERROR_ATTENDANCE_007';
+  public static readonly LONGITUDE_REQUIRED = 'ERROR_ATTENDANCE_004';
+  public static readonly LATITUDE_REQUIRED = 'ERROR_ATTENDANCE_005';
+  public static readonly FACILITIES_NOT_FOUND = 'ERROR_ATTENDANCE_006';
+  public static readonly FACILITY_REQUIRED = 'ERROR_ATTENDANCE_007';
   public static readonly NO_ATTENDANCE_RECORDS_FOUND = 'ERROR_ATTENDANCE_008';
   public static readonly EXPORT_START_DATE_REQUIRED = 'ERROR_ATTENDANCE_009';
   public static readonly EXPORT_END_DATE_REQUIRED = 'ERROR_ATTENDANCE_010';
@@ -73,8 +74,24 @@ export class ErrorMessage {
   public static readonly EXPORT_FAILED = 'ERROR_ATTENDANCE_012';
   public static readonly GOOGLE_API_ERROR = 'ERROR_ATTENDANCE_013';
 
+  // Shift Error Codes
+  public static readonly SHIFT_NOT_FOUND = 'ERROR_SHIFT_001';
+  public static readonly SHIFT_NAME_IS_EMPTY = 'ERROR_SHIFT_002';
+  public static readonly SHIFT_START_TIME_IS_REQUIRED = 'ERROR_SHIFT_003';
+  public static readonly SHIFT_END_TIME_IS_REQUIRED = 'ERROR_SHIFT_004';
+  public static readonly SHIFT_ID_IS_REQUIRED = 'ERROR_SHIFT_005';
+  public static readonly SHIFT_NAME_ALREADY_EXISTS = 'ERROR_SHIFT_006';
+
   // Order Error Codes
   public static readonly ORDER_CODE_NOT_EMPTY = 'ERROR_ORDER_001';
+
+  // Optimistic Lock Error Codes
+  public static readonly RECORD_HAVE_BEEN_CHANGED = 'ERROR_OPT_001';
+
+  // Kafka Error Codes
+  public static readonly KAFKA_KEY_IS_REQUIRED = 'ERROR_KFK_001';
+  public static readonly KAFKA_TOPIC_IS_REQUIRED = 'ERROR_KFK_002';
+  public static readonly KAFKA_REQUEST_IS_REQUIRED = 'ERROR_KFK_003';
 
   /**
    * Error message mapping - Vietnamese messages for error codes
@@ -106,6 +123,7 @@ export class ErrorMessage {
     ERROR_AUTH_023: 'Tên đăng nhập là bắt buộc',
     ERROR_AUTH_024: 'Mật khẩu là bắt buộc',
     ERROR_AUTH_025: 'Mật khẩu phải có ít nhất 6 ký tự',
+    ERROR_AUTH_026: 'Không tìm thấy tenant',
 
     // Facility Errors
     ERROR_FACILITY_001: 'Không tìm thấy cơ sở',
@@ -130,18 +148,19 @@ export class ErrorMessage {
     ERROR_EMPLOYEE_011: 'Vai trò là bắt buộc',
     ERROR_EMPLOYEE_012: 'Danh sách cơ sở làm việc là bắt buộc',
     ERROR_EMPLOYEE_013: 'Tên đăng nhập đã tồn tại',
+    ERROR_EMPLOYEE_014: 'Không tìm thấy tên vai trò',
 
     // QR Code Errors
     ERROR_QR_001: 'Không thể tạo mã QR',
 
     // Attendance Errors
     ERROR_ATTENDANCE_001: 'Không tìm thấy bản ghi chấm công',
-    ERROR_ATTENDANCE_002: 'Mã QR không hợp lệ',
+    ERROR_ATTENDANCE_002: 'Không nằm trong khoảng cách cho phép',
     ERROR_ATTENDANCE_003: 'Mã QR đã hết hạn',
-    ERROR_ATTENDANCE_004: 'Đã check-in rồi',
-    ERROR_ATTENDANCE_005: 'Chưa check-in',
-    ERROR_ATTENDANCE_006: 'Tên đăng nhập không khớp',
-    ERROR_ATTENDANCE_007: 'Ngày check-in là bắt buộc',
+    ERROR_ATTENDANCE_004: 'Kinh độ là bắt buộc',
+    ERROR_ATTENDANCE_005: 'Vĩ độ là bắt buộc',
+    ERROR_ATTENDANCE_006: 'Không tìm thấy cơ sở làm việc',
+    ERROR_ATTENDANCE_007: 'Cơ sở làm việc là bắt buộc',
     ERROR_ATTENDANCE_008: 'Không tìm thấy bản ghi chấm công nào',
     ERROR_ATTENDANCE_009: 'Ngày bắt đầu xuất báo cáo là bắt buộc',
     ERROR_ATTENDANCE_010: 'Ngày kết thúc xuất báo cáo là bắt buộc',
@@ -149,8 +168,20 @@ export class ErrorMessage {
     ERROR_ATTENDANCE_012: 'Xuất báo cáo thất bại',
     ERROR_ATTENDANCE_013: 'Lỗi Google API',
 
+    // Shift Errors
+    ERROR_SHIFT_001: 'Không tìm thấy ca làm việc',
+    ERROR_SHIFT_002: 'Tên ca làm việc không được để trống',
+    ERROR_SHIFT_003: 'Thời gian bắt đầu ca làm việc là bắt buộc',
+    ERROR_SHIFT_004: 'Thời gian kết thúc ca làm việc là bắt buộc',
+    ERROR_SHIFT_005: 'ID ca làm việc là bắt buộc',
+    ERROR_SHIFT_006: 'Tên ca làm việc đã tồn tại',
+
     // Order Errors
     ERROR_ORDER_001: 'Mã đơn hàng không được để trống',
+
+    // Optimistic Lock Errors
+    ERROR_OPT_001: 'Bản ghi đã được thay đổi bởi người dùng khác',
+
   };
 
   /**
