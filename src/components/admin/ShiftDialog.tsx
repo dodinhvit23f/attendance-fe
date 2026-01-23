@@ -382,10 +382,6 @@ export const ShiftDialog: React.FC<ShiftDialogProps> = ({open, onClose}) => {
                 error={!!errors.name}
                 helperText={errors.name}
                 placeholder="VD: Ca sáng, Ca chiều"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                  },
-                }}
             />
 
             <Stack direction="row" spacing={2}>
@@ -405,10 +401,6 @@ export const ShiftDialog: React.FC<ShiftDialogProps> = ({open, onClose}) => {
                       step: 60,
                     },
                   }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      },
-                  }}
               />
 
               <TextField
@@ -426,10 +418,6 @@ export const ShiftDialog: React.FC<ShiftDialogProps> = ({open, onClose}) => {
                     htmlInput: {
                       step: 60,
                     },
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      },
                   }}
               />
             </Stack>

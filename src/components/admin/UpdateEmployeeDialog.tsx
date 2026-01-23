@@ -41,7 +41,6 @@ import { FacilityLight } from '@/lib/api/admin/facilities';
 import { type Shift } from '@/lib/api/admin/shifts';
 import { useNotify } from '@/components/notification/NotificationProvider';
 import { ErrorMessage } from '@/lib/constants';
-import ScheduleIcon from '@mui/icons-material/Schedule';
 
 export interface UpdateEmployeeData {
   id: number

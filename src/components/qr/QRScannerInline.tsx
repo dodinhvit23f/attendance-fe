@@ -172,6 +172,7 @@ export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
               '& video': {
                 borderRadius: '8px',
                 width: '100% !important',
+                transform: 'scaleX(-1)',
               },
               '& #qr-shaded-region': {},
             }}

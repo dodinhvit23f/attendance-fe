@@ -78,6 +78,13 @@ Use `ErrorMessage.getMessage(error.message, 'fallback')` for user-facing errors.
 - Wrap role-specific routes with their layout files
 - Use `notifySuccess()`, `notifyError()` from `useNotify()` for user feedback
 
+### Code Cleanliness
+- **Remove unused imports** - Delete imports that are never referenced in the file
+- **Remove unused exports** - Delete exported constants, functions, or types that are never imported elsewhere
+- **Remove empty style objects** - Delete empty `sx={{}}` props or empty CSS-in-JS objects that serve no purpose
+- **Delete dead code** - Remove commented-out code blocks, unreachable code paths, or obsolete functions
+- Run `npm run build` after cleanup to verify no breakage
+
 ## Environment Variables
 
 API endpoints are configured in `.env` with `NEXT_PUBLIC_` prefix. Base URL points to backend at `localhost:8080` in development.
