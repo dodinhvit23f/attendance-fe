@@ -347,10 +347,13 @@ export default function AttendancesPage() {
               <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' }, backgroundColor: '#F5F5F5' }}>ID</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5' }}>Nhân Viên</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5' }}>Định Danh</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5' }}>Ngày</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5' }}>Giờ Vào</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }, backgroundColor: '#F5F5F5' }}>Giờ Ra</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5' }}>Ca</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5' }}>Tạo Bởi</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5' }}>Thay Đổi Bởi</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -397,6 +400,18 @@ export default function AttendancesPage() {
                     >
                       {attendance.fullName}
                     </TableCell>
+                    <TableCell
+                        title={attendance.userName}
+                        sx={{
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                          maxWidth: {xs: 100, sm: 150, md: 200},
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                    >
+                      {attendance.userName}
+                    </TableCell>
                     <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{parseDate(attendance.checkInDate).format('DD/MM/YYYY')}</TableCell>
                     <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>
                       {attendance.checkIn ? (
@@ -432,6 +447,24 @@ export default function AttendancesPage() {
                           Phân Ca
                         </Button>
                       )}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>
+                      {attendance.insertedBy ? (
+                          <Chip
+                              size="small"
+                              color="primary"
+                              variant="outlined"
+                              label={attendance.insertedBy} />
+                      ) : ('-')}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>
+                      {attendance.updatedBy ? (
+                          attendance.updatedBy.split(",").map(
+                              (username) => ( <Chip size="small"
+                                                    color="primary"
+                                                    variant="outlined"
+                                                    key={`user-${username}`}
+                                                    label={username} />))) : ('-')}
                     </TableCell>
                   </TableRow>
                 ))

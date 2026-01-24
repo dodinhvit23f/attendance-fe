@@ -510,6 +510,8 @@ export default function ManagerAttendancesPage() {
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>Giờ Vào</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>Giờ Ra</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>Ca</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5' }}>Tạo Bởi</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5' }}>Thay Đổi Bởi</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -577,6 +579,23 @@ export default function ManagerAttendancesPage() {
                           Chọn Ca
                         </Button>
                       )}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>
+                      {attendance.insertedBy ? (
+                          <Chip size="small"
+                                color="primary"
+                                variant="filled"
+                                label={attendance.insertedBy} />
+                      ) : ('-')}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>
+                      {attendance.updatedBy ? (
+                          attendance.updatedBy.split(",").map(
+                              (username) => ( <Chip
+                                  key={`user-${username}`}
+                                  color="primary"
+                                  variant="outlined"
+                                  label={username} />))) : ('-')}
                     </TableCell>
                   </TableRow>
                 ))

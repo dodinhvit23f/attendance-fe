@@ -9,6 +9,8 @@ export interface Attendance {
   checkIn: string;
   checkOut?: string;
   shiftId?: number;
+  insertedBy?: string | null;
+  updatedBy?: string | null;
 }
 
 export interface GetAttendancesResponse {
