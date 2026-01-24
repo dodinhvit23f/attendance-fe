@@ -584,7 +584,7 @@ export default function ManagerAttendancesPage() {
                       {attendance.insertedBy ? (
                           <Chip size="small"
                                 color="primary"
-                                variant="filled"
+                                variant="outlined"
                                 label={attendance.insertedBy} />
                       ) : ('-')}
                     </TableCell>
