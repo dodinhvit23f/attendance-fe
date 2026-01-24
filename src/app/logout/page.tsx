@@ -4,14 +4,17 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
+import {STORAGE_KEYS} from "@/lib/constants";
 
 export default function LogoutPage() {
   const router = useRouter();
 
   useEffect(() => {
     // Clear all localStorage
-    localStorage.clear();
-
+    localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.ROLES);
+    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     // Delay 1 second then redirect to login page
     const timer = setTimeout(() => {
       router.push('/');

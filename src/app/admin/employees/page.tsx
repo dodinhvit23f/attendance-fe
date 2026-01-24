@@ -5,6 +5,7 @@ import {useEffect} from 'react';
 import {
   Box,
   Button,
+  CircularProgress,
   IconButton,
   InputAdornment,
   Paper,
@@ -51,9 +52,11 @@ export default function EmployeesPage() {
   const [facilitiesLoaded, setFacilitiesLoaded] = React.useState(false);
   const [shifts, setShifts] = React.useState<Shift[]>([]);
   const [shiftsLoaded, setShiftsLoaded] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const fetchEmployees = async () => {
     try {
+      setIsLoading(true);
       setLoading(true);
       setError(null);
       const response = await getEmployees({
@@ -67,6 +70,7 @@ export default function EmployeesPage() {
       setError(err instanceof Error ? err.message : 'Failed to fetch employees');
       console.error('Error fetching employees:', err);
     } finally {
+      setIsLoading(false);
       setLoading(false);
     }
   };
@@ -301,90 +305,138 @@ export default function EmployeesPage() {
         </Box>
 
         {/* Employee Table */}
-        <TableContainer component={Paper} elevation={2}>
-          <Table>
-            <TableHead>
-              <TableRow sx={{backgroundColor: '#F5F5F5'}}>
-                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Mã NV</TableCell>
-                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Họ Tên</TableCell>
-                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>Email</TableCell>
-                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' }}}>Ngày Sinh</TableCell>
-                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>Giới Tính</TableCell>
-                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Ca Làm</TableCell>
-                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Vai Trò</TableCell>
-                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' }}}>Trạng Thái</TableCell>
-                <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}} align="right">
-                  Thao Tác
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {!employees || employees.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} sx={{border: 0}}>
-                      <Box sx={{textAlign: 'center', py: 8}}>
-                        <Typography variant="h6" color="text.secondary" gutterBottom>
-                          Chưa có nhân viên nào
-                        </Typography>
-                        <Typography color="text.secondary" sx={{mb: 2}}>
-                          Bắt đầu bằng cách thêm nhân viên đầu tiên
-                        </Typography>
-                        <Button
-                            variant="contained"
-                            startIcon={<AddIcon/>}
-                            onClick={handleAddEmployee}
-                            sx={{
-                              fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                            }}
-                        >
-                          Thêm Nhân Viên
-                        </Button>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-              ) : (
-                  employees.map((employee) => (
-                      <TableRow
-                          key={employee.id}
-                          sx={{'&:hover': {backgroundColor: '#F9F9F9'}}}
-                      >
-                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{employee.employeeId}</TableCell>
-                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{employee.fullName}</TableCell>
-                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>{employee.email}</TableCell>
-                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' }}}>{employee.dateOfBirth}</TableCell>
-                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>
-                          {employee.gender === 'MALE' ? 'Nam' : employee.gender === 'FEMALE' ? 'Nữ' : 'Khác'}
-                        </TableCell>
-                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{getShiftName(employee)}</TableCell>
-                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{getEmployeeRoleName(employee)}</TableCell>
-                        <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }}}>
-                          <Stack direction="row" alignItems="center" spacing={1}>
-                            <Switch
-                                checked={employee.active}
-                                onChange={() => handleToggleStatus(employee.id, employee.active)}
-                                color="success"
-                                size="small"
-                                disabled={togglingId === employee.id}
-                            />
-                            <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>
-                              {togglingId === employee.id ? 'Đang cập nhật...' : (employee.active ? 'Hoạt động' : 'Ngừng hoạt động')}
-                            </Typography>
-                          </Stack>
-                        </TableCell>
-                        <TableCell align="right">
-                          <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => handleEditEmployee(employee.id)}
+        <Box sx={{
+          height: 'calc(100vh - 320px)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          <TableContainer
+            component={Paper}
+            elevation={2}
+            sx={{
+              flex: 1,
+              overflow: 'auto',
+            }}
+          >
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow sx={{backgroundColor: '#F5F5F5'}}>
+                  <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5'}}>Mã NV</TableCell>
+                  <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5'}}>Họ Tên</TableCell>
+                  <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }, backgroundColor: '#F5F5F5'}}>Email</TableCell>
+                  <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' }, backgroundColor: '#F5F5F5'}}>Ngày Sinh</TableCell>
+                  <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }, backgroundColor: '#F5F5F5'}}>Giới Tính</TableCell>
+                  <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5'}}>Ca Làm</TableCell>
+                  <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5'}}>Vai Trò</TableCell>
+                  <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' }, backgroundColor: '#F5F5F5'}}>Trạng Thái</TableCell>
+                  <TableCell sx={{fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5'}} align="right">
+                    Thao Tác
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={9} sx={{border: 0}}>
+                        <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8}}>
+                          <CircularProgress size={40} sx={{mr: 2}} />
+                          <Typography variant="body1" color="text.secondary">
+                            Đang tải dữ liệu...
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                ) : !employees || employees.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} sx={{border: 0}}>
+                        <Box sx={{textAlign: 'center', py: 8}}>
+                          <Typography variant="h6" color="text.secondary" gutterBottom>
+                            Chưa có nhân viên nào
+                          </Typography>
+                          <Typography color="text.secondary" sx={{mb: 2}}>
+                            Bắt đầu bằng cách thêm nhân viên đầu tiên
+                          </Typography>
+                          <Button
+                              variant="contained"
+                              startIcon={<AddIcon/>}
+                              onClick={handleAddEmployee}
+                              sx={{
+                                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                              }}
                           >
-                            <EditIcon fontSize="small"/>
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                  ))
-              )}
-            </TableBody>
-          </Table>
+                            Thêm Nhân Viên
+                          </Button>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                ) : (
+                    employees.map((employee) => (
+                        <TableRow
+                            key={employee.id}
+                            sx={{'&:hover': {backgroundColor: '#F9F9F9'}}}
+                        >
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{employee.employeeId}</TableCell>
+                          <TableCell
+                            title={employee.fullName}
+                            sx={{
+                              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                              maxWidth: {xs: 100, sm: 150, md: 200},
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {employee.fullName}
+                          </TableCell>
+                          <TableCell
+                            title={employee.email}
+                            sx={{
+                              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                              display: { xs: 'none', md: 'table-cell' },
+                              maxWidth: {xs: 120, sm: 180, md: 250},
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {employee.email}
+                          </TableCell>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' }}}>{employee.dateOfBirth}</TableCell>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>
+                            {employee.gender === 'MALE' ? 'Nam' : employee.gender === 'FEMALE' ? 'Nữ' : 'Khác'}
+                          </TableCell>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{getShiftName(employee)}</TableCell>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{getEmployeeRoleName(employee)}</TableCell>
+                          <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }}}>
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                              <Switch
+                                  checked={employee.active}
+                                  onChange={() => handleToggleStatus(employee.id, employee.active)}
+                                  color="success"
+                                  size="small"
+                                  disabled={togglingId === employee.id}
+                              />
+                              <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>
+                                {togglingId === employee.id ? 'Đang cập nhật...' : (employee.active ? 'Hoạt động' : 'Ngừng hoạt động')}
+                              </Typography>
+                            </Stack>
+                          </TableCell>
+                          <TableCell align="right">
+                            <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={() => handleEditEmployee(employee.id)}
+                            >
+                              <EditIcon fontSize="small"/>
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                    ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
           <TablePagination
               rowsPerPageOptions={[30, 50]}
               component="div"
@@ -398,7 +450,7 @@ export default function EmployeesPage() {
                   `${from}-${to} trên tổng ${count !== -1 ? count : `nhiều hơn ${to}`}`
               }
           />
-        </TableContainer>
+        </Box>
 
         {/* Create Employee Dialog */}
         <CreateEmployeeDialog

@@ -1,36 +1,37 @@
 'use client';
 
 import * as React from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {
   Box,
+  Checkbox,
+  Chip,
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  ListItemText,
+  MenuItem,
+  OutlinedInput,
   Paper,
-  Typography,
+  Select,
+  Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
-  Stack,
-  Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Checkbox,
-  ListItemText,
-  OutlinedInput,
   TablePagination,
-  Switch,
+  TableRow,
+  Typography,
 } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import {useCallback, useEffect, useState} from 'react';
 import {useLoading} from '@/components/root/client-layout';
 import {useNotify} from '@/components/notification/NotificationProvider';
 import {
   getManagerUsers,
-  updateManagerEmployeeStatus,
   type ManagerEmployee,
+  updateManagerEmployeeStatus,
 } from '@/lib/api/manager/users';
 import {ErrorMessage} from '@/lib/constants';
 import {getManagerFacilities, ManagerFacility} from "@/lib/api/manager/facilities";
@@ -48,6 +49,8 @@ export default function ManagerUsersPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(30);
   const [totalElements, setTotalElements] = useState(0);
+
+  const [togglingId, setTogglingId] = React.useState<number | null>(null);
 
   // Fetch facilities
   useEffect(() => {
@@ -134,6 +137,8 @@ export default function ManagerUsersPage() {
   const handleToggleStatus = async (employee: ManagerEmployee) => {
     setUpdatingEmployeeId(employee.id);
     try {
+      setTogglingId(employee.id);
+
       await updateManagerEmployeeStatus(employee.id, employee.version);
       setEmployees((prev) =>
           prev.map((emp) =>
@@ -153,6 +158,7 @@ export default function ManagerUsersPage() {
       }
     } finally {
       setUpdatingEmployeeId(null);
+      setTogglingId(null);
     }
   };
 
@@ -198,63 +204,125 @@ export default function ManagerUsersPage() {
         </Stack>
 
         {/* Employees Table */}
-        <TableContainer component={Paper} elevation={2}>
-          <Table>
-            <TableHead>
-              <TableRow sx={{backgroundColor: '#F5F5F5'}}>
-                <TableCell sx={{fontWeight: 600}}>Mã Nhân Viên</TableCell>
-                <TableCell sx={{fontWeight: 600}}>Họ Tên</TableCell>
-                <TableCell sx={{fontWeight: 600}}>Email</TableCell>
-                <TableCell sx={{fontWeight: 600}}>Số Điện Thoại</TableCell>
-                <TableCell sx={{fontWeight: 600}}>Giới Tính</TableCell>
-                <TableCell sx={{fontWeight: 600}}>Vai Trò</TableCell>
-                <TableCell sx={{fontWeight: 600}}>Trạng Thái</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {employees.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} sx={{border: 0}}>
-                      <Box sx={{textAlign: 'center', py: 8}}>
-                        <PersonAddIcon sx={{fontSize: 64, color: 'text.secondary', mb: 2}}/>
-                        <Typography variant="h6" color="text.secondary" gutterBottom>
-                          Chưa có nhân viên
-                        </Typography>
-                        <Typography color="text.secondary">
-                          Không tìm thấy nhân viên nào trong hệ thống
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-              ) : (
-                  employees.map((employee) => (
-                      <TableRow
-                          key={employee.id}
-                          sx={{'&:hover': {backgroundColor: '#F9F9F9'}}}
-                      >
-                        <TableCell>{employee.employeeId}</TableCell>
-                        <TableCell>{employee.fullName}</TableCell>
-                        <TableCell>{employee.email}</TableCell>
-                        <TableCell>{employee.phoneNumber}</TableCell>
-                        <TableCell>
-                          {employee.gender === 'MALE' ? 'Nam' : employee.gender === 'FEMALE' ? 'Nữ' : employee.gender}
-                        </TableCell>
-                        <TableCell>
-                          <Chip label={employee.role} size="small" color="primary"
-                                variant="outlined"/>
-                        </TableCell>
-                        <TableCell>
-                          <Switch
-                              checked={employee.active}
-                              onChange={() => handleToggleStatus(employee)}
-                              disabled={updatingEmployeeId === employee.id}
-                          />
-                        </TableCell>
-                      </TableRow>
-                  ))
-              )}
-            </TableBody>
-          </Table>
+        <Box sx={{
+          height: 'calc(100vh - 280px)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          <TableContainer
+            component={Paper}
+            elevation={2}
+            sx={{
+              flex: 1,
+              overflow: 'auto',
+            }}
+          >
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow sx={{backgroundColor: '#F5F5F5'}}>
+                  <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5'}}>Mã Nhân Viên</TableCell>
+                  <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5'}}>Họ Tên</TableCell>
+                  <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5'}}>Email</TableCell>
+                  <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5'}}>Số Điện Thoại</TableCell>
+                  <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5'}}>Giới Tính</TableCell>
+                  <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5'}}>Vai Trò</TableCell>
+                  <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5'}}>Trạng Thái</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {isLoadingEmployees ? (
+                    <TableRow>
+                      <TableCell colSpan={7} sx={{border: 0}}>
+                        <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8}}>
+                          <CircularProgress size={40} sx={{mr: 2}} />
+                          <Typography variant="body1" color="text.secondary">
+                            Đang tải dữ liệu...
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                ) : employees.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} sx={{border: 0}}>
+                        <Box sx={{textAlign: 'center', py: 8}}>
+                          <PersonAddIcon sx={{fontSize: 64, color: 'text.secondary', mb: 2}}/>
+                          <Typography variant="h6" color="text.secondary" gutterBottom>
+                            Chưa có nhân viên
+                          </Typography>
+                          <Typography color="text.secondary">
+                            Không tìm thấy nhân viên nào trong hệ thống
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                ) : (
+                    employees.map((employee) => (
+                        <TableRow
+                            key={employee.id}
+                            sx={{'&:hover': {backgroundColor: '#F9F9F9'}}}
+                        >
+                          <TableCell>{employee.employeeId}</TableCell>
+                          <TableCell
+                            title={employee.fullName}
+                            sx={{
+                              maxWidth: {xs: 100, sm: 150, md: 200},
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {employee.fullName}
+                          </TableCell>
+                          <TableCell
+                            title={employee.email}
+                            sx={{
+                              maxWidth: {xs: 120, sm: 180, md: 250},
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {employee.email}
+                          </TableCell>
+                          <TableCell
+                            title={employee.phoneNumber}
+                            sx={{
+                              maxWidth: {xs: 90, sm: 120, md: 150},
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {employee.phoneNumber}
+                          </TableCell>
+                          <TableCell>
+                            {employee.gender === 'MALE' ? 'Nam' : employee.gender === 'FEMALE' ? 'Nữ' : employee.gender}
+                          </TableCell>
+                          <TableCell>
+                            <Chip label={employee.role} size="small" color="primary"
+                                  variant="outlined"/>
+                          </TableCell>
+                          <TableCell>
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                              <Switch
+                                  size="small"
+                                  checked={employee.active}
+                                  onChange={() => handleToggleStatus(employee)}
+                                  disabled={updatingEmployeeId === employee.id}
+                              />
+                              <Typography variant="body2" color="text.secondary"
+                                          sx={{fontSize: {xs: '0.75rem', sm: '0.875rem'}}}>
+                                {togglingId === employee.id ? 'Đang cập nhật...' : (employee.active ? 'Hoạt động' : 'Ngừng hoạt động')}
+                              </Typography>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                    ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
           <TablePagination
               rowsPerPageOptions={[30, 50]}
               component="div"
@@ -268,7 +336,7 @@ export default function ManagerUsersPage() {
                   `${from}-${to} trên tổng ${count !== -1 ? count : `nhiều hơn ${to}`}`
               }
           />
-        </TableContainer>
+        </Box>
       </Box>
   );
 }

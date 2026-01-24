@@ -68,6 +68,7 @@ export default function AttendancesPage() {
   const [selectedAttendance, setSelectedAttendance] = useState<Attendance | null>(null);
   const [selectedShiftId, setSelectedShiftId] = useState<number | ''>('');
   const [isAssigning, setIsAssigning] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -82,6 +83,7 @@ export default function AttendancesPage() {
 
   const fetchAttendances = async () => {
     try {
+      setIsLoading(true);
       setLoading(true);
       const response = await getAttendances({
         startDate,
@@ -107,6 +109,7 @@ export default function AttendancesPage() {
       setAttendances([]);
       setTotalElements(0);
     } finally {
+      setIsLoading(false);
       setLoading(false);
     }
   };
@@ -325,81 +328,117 @@ export default function AttendancesPage() {
       </Stack>
 
       {/* Attendance Table */}
-      <TableContainer component={Paper} elevation={2}>
-        <Table>
-          <TableHead>
-            <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
-              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' }}}>ID</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Nhân Viên</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Ngày</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Giờ Vào</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>Giờ Ra</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>Ca</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {attendances.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} sx={{ border: 0 }}>
-                  <Box sx={{ textAlign: 'center', py: 8 }}>
-                    <Typography variant="h6" color="text.secondary" gutterBottom>
-                      Không có dữ liệu chấm công
-                    </Typography>
-                    <Typography color="text.secondary">
-                      Không tìm thấy bản ghi chấm công trong khoảng thời gian đã chọn
-                    </Typography>
-                  </Box>
-                </TableCell>
+      <Box sx={{
+        height: 'calc(100vh - 320px)',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
+        <TableContainer
+          component={Paper}
+          elevation={2}
+          sx={{
+            flex: 1,
+            overflow: 'auto',
+          }}
+        >
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' }, backgroundColor: '#F5F5F5' }}>ID</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5' }}>Nhân Viên</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5' }}>Ngày</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5' }}>Giờ Vào</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }, backgroundColor: '#F5F5F5' }}>Giờ Ra</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5' }}>Ca</TableCell>
               </TableRow>
-            ) : (
-                attendances.map((attendance) => (
-                <TableRow
-                  key={attendance.id}
-                  sx={{ '&:hover': { backgroundColor: '#F9F9F9' } }}
-                >
-                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' }}}>{attendance.id}</TableCell>
-                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{attendance.fullName}</TableCell>
-                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{parseDate(attendance.checkInDate).format('DD/MM/YYYY')}</TableCell>
-                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>
-                    {attendance.checkIn ? (
-                      <Chip label={parseDateTime(attendance.checkIn).format('HH:mm')} size="small" variant="outlined" />
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>
-                    {attendance.checkOut ? (
-                      <Chip label={parseDateTime(attendance.checkOut).format('HH:mm')} size="small" variant="outlined" />
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>
-                    {attendance.shiftId ? (
-                      <Chip
-                        label={getShiftName(attendance.shiftId) || `Ca ${attendance.shiftId}`}
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                      />
-                    ) : (
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => handleOpenAssignShiftDialog(attendance)}
-                        sx={{
-                          fontSize: { xs: '0.65rem', sm: '0.75rem' },
-                        }}
-                      >
-                        Phân Ca
-                      </Button>
-                    )}
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} sx={{ border: 0 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+                      <CircularProgress size={40} sx={{ mr: 2 }} />
+                      <Typography variant="body1" color="text.secondary">
+                        Đang tải dữ liệu...
+                      </Typography>
+                    </Box>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : attendances.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} sx={{ border: 0 }}>
+                    <Box sx={{ textAlign: 'center', py: 8 }}>
+                      <Typography variant="h6" color="text.secondary" gutterBottom>
+                        Không có dữ liệu chấm công
+                      </Typography>
+                      <Typography color="text.secondary">
+                        Không tìm thấy bản ghi chấm công trong khoảng thời gian đã chọn
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                  attendances.map((attendance) => (
+                  <TableRow
+                    key={attendance.id}
+                    sx={{ '&:hover': { backgroundColor: '#F9F9F9' } }}
+                  >
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' }}}>{attendance.id}</TableCell>
+                    <TableCell
+                      title={attendance.fullName}
+                      sx={{
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                        maxWidth: {xs: 100, sm: 150, md: 200},
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {attendance.fullName}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>{parseDate(attendance.checkInDate).format('DD/MM/YYYY')}</TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>
+                      {attendance.checkIn ? (
+                        <Chip label={parseDateTime(attendance.checkIn).format('HH:mm')} size="small" variant="outlined" />
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>
+                      {attendance.checkOut ? (
+                        <Chip label={parseDateTime(attendance.checkOut).format('HH:mm')} size="small" variant="outlined" />
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }}}>
+                      {attendance.shiftId ? (
+                        <Chip
+                          label={getShiftName(attendance.shiftId) || `Ca ${attendance.shiftId}`}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                        />
+                      ) : (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => handleOpenAssignShiftDialog(attendance)}
+                          sx={{
+                            fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                          }}
+                        >
+                          Phân Ca
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
         <TablePagination
           rowsPerPageOptions={[30, 50]}
           component="div"
@@ -413,7 +452,7 @@ export default function AttendancesPage() {
             `${from}-${to} trên tổng ${count !== -1 ? count : `nhiều hơn ${to}`}`
           }
         />
-      </TableContainer>
+      </Box>
 
       {/* Assign Shift Dialog */}
       <Dialog

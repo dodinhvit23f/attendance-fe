@@ -87,10 +87,12 @@ export default function ManagerAttendancesPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(30);
   const [totalElements, setTotalElements] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Fetch attendances
   const fetchAttendances = useCallback(async () => {
     try {
+      setIsLoading(true);
       setLoading(true);
       const response = await getManagerAttendances({
         startDate,
@@ -107,6 +109,7 @@ export default function ManagerAttendancesPage() {
       console.error('Failed to fetch attendances:', error);
       notifyError('Không thể tải dữ liệu chấm công');
     } finally {
+      setIsLoading(false);
       setLoading(false);
     }
   }, [startDate, endDate, page, rowsPerPage]);
@@ -483,67 +486,104 @@ export default function ManagerAttendancesPage() {
       </Stack>
 
       {/* Attendance Table */}
-      <TableContainer component={Paper} elevation={2} sx={{ maxWidth: '100%' }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
-              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>ID</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Nhân Viên</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Ngày</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Giờ Vào</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Giờ Ra</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>Ca</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {attendances.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} sx={{ border: 0 }}>
-                  <Box sx={{ textAlign: 'center', py: { xs: 4, sm: 8 } }}>
-                    <Typography variant="body1" color="text.secondary" gutterBottom>
-                      Chưa có dữ liệu
-                    </Typography>
-                  </Box>
-                </TableCell>
+      <Box sx={{
+        height: 'calc(100vh - 260px)',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
+        <TableContainer
+          component={Paper}
+          elevation={2}
+          sx={{
+            maxWidth: '100%',
+            flex: 1,
+            overflow: 'auto',
+          }}
+        >
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>ID</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>Nhân Viên</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>Ngày</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>Giờ Vào</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>Giờ Ra</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>Ca</TableCell>
               </TableRow>
-            ) : (
-              attendances.map((attendance) => (
-                <TableRow key={attendance.id}>
-                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{attendance.id}</TableCell>
-                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, maxWidth: { xs: 80, sm: 'none' }, overflow: 'hidden', textOverflow: 'ellipsis' }}>{attendance.fullName}</TableCell>
-                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>{parseDate(attendance.checkInDate).format('DD/MM/YYYY')}</TableCell>
-                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{parseDateTime(attendance.checkIn).format('HH:mm')}</TableCell>
-                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                    {attendance.checkOut ? parseDateTime(attendance.checkOut).format('HH:mm') : '-'}
-                  </TableCell>
-                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                    {attendance.shiftId ? (
-                      <Chip
-                        label={getShiftName(attendance.shiftId) || `Ca ${attendance.shiftId}`}
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                      />
-                    ) : (
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => handleOpenAssignShiftDialog(attendance)}
-                        sx={{
-                          borderRadius: '8px',
-                          textTransform: 'none',
-                          fontSize: { xs: '0.65rem', sm: '0.75rem' },
-                        }}
-                      >
-                        Chọn Ca
-                      </Button>
-                    )}
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} sx={{ border: 0 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+                      <CircularProgress size={40} sx={{ mr: 2 }} />
+                      <Typography variant="body1" color="text.secondary">
+                        Đang tải dữ liệu...
+                      </Typography>
+                    </Box>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : attendances.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} sx={{ border: 0 }}>
+                    <Box sx={{ textAlign: 'center', py: { xs: 4, sm: 8 } }}>
+                      <Typography variant="body1" color="text.secondary" gutterBottom>
+                        Chưa có dữ liệu
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                attendances.map((attendance) => (
+                  <TableRow key={attendance.id}>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{attendance.id}</TableCell>
+                    <TableCell
+                      title={attendance.fullName}
+                      sx={{
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                        maxWidth: { xs: 80, sm: 150, md: 200 },
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {attendance.fullName}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>{parseDate(attendance.checkInDate).format('DD/MM/YYYY')}</TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{parseDateTime(attendance.checkIn).format('HH:mm')}</TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                      {attendance.checkOut ? parseDateTime(attendance.checkOut).format('HH:mm') : '-'}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                      {attendance.shiftId ? (
+                        <Chip
+                          label={getShiftName(attendance.shiftId) || `Ca ${attendance.shiftId}`}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                        />
+                      ) : (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => handleOpenAssignShiftDialog(attendance)}
+                          sx={{
+                            borderRadius: '8px',
+                            textTransform: 'none',
+                            fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                          }}
+                        >
+                          Chọn Ca
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
         <TablePagination
           rowsPerPageOptions={[30, 50]}
           component="div"
@@ -557,7 +597,7 @@ export default function ManagerAttendancesPage() {
             `${from}-${to} trên tổng ${count !== -1 ? count : `nhiều hơn ${to}`}`
           }
         />
-      </TableContainer>
+      </Box>
 
       {/* Attendance Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>

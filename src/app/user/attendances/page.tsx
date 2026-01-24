@@ -3,6 +3,7 @@
 import * as React from 'react';
 import {
   Box,
+  CircularProgress,
   Paper,
   Typography,
   Table,
@@ -71,10 +72,12 @@ export default function UserAttendancesPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(30);
   const [totalElements, setTotalElements] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Fetch attendances
   const fetchAttendances = useCallback(async () => {
     try {
+      setIsLoading(true);
       setLoading(true);
       const response = await getUserAttendances({
         startDate,
@@ -91,6 +94,7 @@ export default function UserAttendancesPage() {
       console.error('Failed to fetch attendances:', error);
       notifyError('Không thể tải dữ liệu chấm công');
     } finally {
+      setIsLoading(false);
       setLoading(false);
     }
   }, [startDate, endDate, page, rowsPerPage]);
@@ -411,7 +415,18 @@ export default function UserAttendancesPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {attendances.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={5} sx={{ border: 0 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+                    <CircularProgress size={40} sx={{ mr: 2 }} />
+                    <Typography variant="body1" color="text.secondary">
+                      Đang tải dữ liệu...
+                    </Typography>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ) : attendances.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} sx={{ border: 0 }}>
                   <Box sx={{ textAlign: 'center', py: { xs: 4, sm: 8 } }}>
