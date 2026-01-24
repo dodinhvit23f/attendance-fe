@@ -510,8 +510,8 @@ export default function ManagerAttendancesPage() {
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>Giờ Vào</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>Giờ Ra</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>Ca</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5' }}>Tạo Bởi</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, backgroundColor: '#F5F5F5' }}>Thay Đổi Bởi</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap',backgroundColor: '#F5F5F5' }}>Tạo Bởi</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap',backgroundColor: '#F5F5F5' }}>Thay Đổi Bởi</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -580,22 +580,47 @@ export default function ManagerAttendancesPage() {
                         </Button>
                       )}
                     </TableCell>
-                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, maxWidth: { xs: 100, sm: 150 } }}>
                       {attendance.insertedBy ? (
-                          <Chip size="small"
-                                color="primary"
-                                variant="outlined"
-                                label={attendance.insertedBy} />
+                          <Chip
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                            label={attendance.insertedBy}
+                            sx={{
+                              fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                              height: { xs: 20, sm: 24 },
+                            }}
+                          />
                       ) : ('-')}
                     </TableCell>
-                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, maxWidth: { xs: 120, sm: 180 } }}>
                       {attendance.updatedBy ? (
-                          attendance.updatedBy.split(",").map(
-                              (username) => ( <Chip
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: { xs: 0.5, sm: 0.75 },
+                              alignItems: 'center',
+                            }}
+                          >
+                            {attendance.updatedBy.split(",").map(
+                              (username) => (
+                                <Chip
                                   key={`user-${username}`}
                                   color="primary"
                                   variant="outlined"
-                                  label={username} />))) : ('-')}
+                                  label={username.trim()}
+                                  size="small"
+                                  sx={{
+                                    fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                                    height: { xs: 20, sm: 24 },
+                                  }}
+                                />
+                              )
+                            )}
+                          </Box>
+                      ) : ('-')}
                     </TableCell>
                   </TableRow>
                 ))

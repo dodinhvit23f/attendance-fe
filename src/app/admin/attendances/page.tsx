@@ -448,23 +448,47 @@ export default function AttendancesPage() {
                         </Button>
                       )}
                     </TableCell>
-                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, maxWidth: { xs: 100, sm: 150 } }}>
                       {attendance.insertedBy ? (
                           <Chip
                               size="small"
                               color="primary"
                               variant="outlined"
-                              label={attendance.insertedBy} />
+                              label={attendance.insertedBy}
+                              sx={{
+                                fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                                height: { xs: 20, sm: 24 },
+                              }}
+                          />
                       ) : ('-')}
                     </TableCell>
-                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' }}}>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, maxWidth: { xs: 120, sm: 180 } }}>
                       {attendance.updatedBy ? (
-                          attendance.updatedBy.split(",").map(
-                              (username) => ( <Chip size="small"
-                                                    color="primary"
-                                                    variant="outlined"
-                                                    key={`user-${username}`}
-                                                    label={username} />))) : ('-')}
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: { xs: 0.5, sm: 0.75 },
+                              alignItems: 'center',
+                            }}
+                          >
+                            {attendance.updatedBy.split(",").map(
+                              (username) => (
+                                <Chip
+                                  size="small"
+                                  color="primary"
+                                  variant="outlined"
+                                  key={`user-${username}`}
+                                  label={username.trim()}
+                                  sx={{
+                                    fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                                    height: { xs: 20, sm: 24 },
+                                  }}
+                                />
+                              )
+                            )}
+                          </Box>
+                      ) : ('-')}
                     </TableCell>
                   </TableRow>
                 ))
