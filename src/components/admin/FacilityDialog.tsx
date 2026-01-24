@@ -211,13 +211,16 @@ export const FacilityDialog: React.FC<FacilityDialogProps> = ({
 
       const data = await response.json();
 
-      if (data && Array.isArray(data)) {
+      if (data && Array.isArray(data) && data[0]) {
         const location = data[0];
+
         setFormData((prev) => ({
           ...prev,
           latitude: parseFloat(location.lat),
           longitude: parseFloat(location.lon),
         }));
+
+
         // Clear any previous errors
         setErrors((prev) => {
           const newErrors = { ...prev };
