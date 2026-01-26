@@ -29,6 +29,9 @@ import {
   Chip,
   TablePagination,
 } from '@mui/material';
+import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import AddIcon from '@mui/icons-material/Add';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -37,7 +40,8 @@ import PrintIcon from '@mui/icons-material/Print';
 import QRCode from 'react-qr-code';
 import { useEffect, useState, useCallback } from 'react';
 import { getManagerFacilities, ManagerFacility } from '@/lib/api/manager/facilities';
-import { recordAttendance, getManagerAttendances, assignShiftToManagerAttendance, Attendance } from '@/lib/api/manager/attendance';
+import { recordAttendance, getManagerAttendances, assignShiftToManagerAttendance, Attendance, recordManualAttendance } from '@/lib/api/manager/attendance';
+import { getManagerUsers, ManagerEmployee } from '@/lib/api/manager/users';
 import { getManagerShifts, Shift } from '@/lib/api/manager/shifts';
 import { parseDate, parseDateTime } from '@/lib/api/types';
 import { ErrorMessage } from '@/lib/constants';
@@ -45,6 +49,7 @@ import { useNotify } from '@/components/notification/NotificationProvider';
 import { MapPicker } from '@/components/admin/MapPicker';
 import { useLoading } from "@/components/root/client-layout";
 import { QRScannerInline } from '@/components/qr/QRScannerInline';
+import { BulkShiftAssignmentDialog } from '@/components/manager/BulkShiftAssignmentDialog';
 import dayjs from 'dayjs';
 
 // Calculate distance between two coordinates in meters
@@ -82,12 +87,39 @@ export default function ManagerAttendancesPage() {
   const [selectedAttendance, setSelectedAttendance] = useState<Attendance | null>(null);
   const [selectedShiftId, setSelectedShiftId] = useState<number | ''>('');
   const [isAssigning, setIsAssigning] = useState(false);
+  const [assignShiftDate, setAssignShiftDate] = useState<dayjs.Dayjs | null>(null);
 
   // Pagination state
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(30);
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Bulk shift assignment state
+  const [bulkAssignDialogOpen, setBulkAssignDialogOpen] = useState(false);
+
+  // Manual attendance state
+  const [manualAttendanceDialogOpen, setManualAttendanceDialogOpen] = useState(false);
+  const [employees, setEmployees] = useState<ManagerEmployee[]>([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | ''>('');
+  const [selectedShiftIdManual, setSelectedShiftIdManual] = useState<number | ''>('');
+  const [selectedFacilityId, setSelectedFacilityId] = useState<number | ''>('');
+  const [checkInDate, setCheckInDate] = useState(dayjs().format('YYYY-MM-DD'));
+  const [checkInTime, setCheckInTime] = useState('08:00');
+  const [checkOutTime, setCheckOutTime] = useState('17:00');
+  const [selectedReason, setSelectedReason] = useState('');
+  const [customReason, setCustomReason] = useState('');
+  const [reasonError, setReasonError] = useState('');
+  const [isSubmittingManual, setIsSubmittingManual] = useState(false);
+
+  // Predefined reasons
+  const PREDEFINED_REASONS = [
+    'Thiết bị của nhân viên không hoạt động',
+    'Nhân viên quên thiết bị',
+    'Lỗi hệ thống chấm công',
+    'Nhân viên đi công tác',
+    'Khác (vui lòng nhập lý do)',
+  ];
 
   // Fetch attendances
   const fetchAttendances = useCallback(async () => {
@@ -241,6 +273,7 @@ export default function ManagerAttendancesPage() {
   const handleOpenAssignShiftDialog = (attendance: Attendance) => {
     setSelectedAttendance(attendance);
     setSelectedShiftId('');
+    setAssignShiftDate(parseDate(attendance.checkInDate));
     setAssignShiftDialogOpen(true);
   };
 
@@ -248,6 +281,7 @@ export default function ManagerAttendancesPage() {
     setAssignShiftDialogOpen(false);
     setSelectedAttendance(null);
     setSelectedShiftId('');
+    setAssignShiftDate(null);
   };
 
   const handleAssignShift = async () => {
@@ -284,6 +318,108 @@ export default function ManagerAttendancesPage() {
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
+  };
+
+  // Bulk shift assignment handlers
+  const handleOpenBulkAssignDialog = () => {
+    setBulkAssignDialogOpen(true);
+  };
+
+  const handleCloseBulkAssignDialog = () => {
+    setBulkAssignDialogOpen(false);
+  };
+
+  // Manual attendance handlers
+  const handleOpenManualAttendanceDialog = async () => {
+    setManualAttendanceDialogOpen(true);
+    // Fetch employees
+    try {
+      const response = await getManagerUsers({ size: 1000 });
+      setEmployees(response.data.employees.filter(emp => emp.active));
+    } catch (error) {
+      console.error('Failed to fetch employees:', error);
+      notifyError('Không thể tải danh sách nhân viên');
+    }
+  };
+
+  const handleCloseManualAttendanceDialog = () => {
+    setManualAttendanceDialogOpen(false);
+    setSelectedEmployeeId('');
+    setSelectedShiftIdManual('');
+    setSelectedFacilityId('');
+    setCheckInDate(dayjs().format('YYYY-MM-DD'));
+    setCheckInTime('08:00');
+    setCheckOutTime('17:00');
+    setSelectedReason('');
+    setCustomReason('');
+    setReasonError('');
+  };
+
+  const handleReasonChange = (reason: string) => {
+    setSelectedReason(reason);
+    setReasonError('');
+    if (reason !== 'Khác (vui lòng nhập lý do)') {
+      setCustomReason('');
+    }
+  };
+
+  const handleCustomReasonChange = (value: string) => {
+    setCustomReason(value);
+    if (value.length > 300) {
+      setReasonError('Lý do không được vượt quá 300 ký tự');
+    } else {
+      setReasonError('');
+    }
+  };
+
+  const handleSubmitManualAttendance = async () => {
+    // Validation
+    if (!selectedEmployeeId || !selectedShiftIdManual || !selectedFacilityId) {
+      notifyError('Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+
+    const finalReason = selectedReason === 'Khác (vui lòng nhập lý do)' ? customReason : selectedReason;
+
+    if (!finalReason) {
+      notifyError('Vui lòng chọn lý do');
+      return;
+    }
+
+    if (finalReason.length > 300) {
+      setReasonError('Lý do không được vượt quá 300 ký tự');
+      return;
+    }
+
+    // Format datetime strings
+    const checkInDateTime = `${checkInDate}T${checkInTime}:00.000+07:00`;
+    const checkOutDateTime = `${checkInDate}T${checkOutTime}:00.000+07:00`;
+
+    try {
+      setIsSubmittingManual(true);
+      setLoading(true);
+      await recordManualAttendance({
+        employeeId: selectedEmployeeId as number,
+        shiftId: selectedShiftIdManual as number,
+        checkInDate,
+        checkInTime: checkInDateTime,
+        checkOutTime: checkOutDateTime,
+        facilityId: selectedFacilityId as number,
+        reason: finalReason,
+      });
+      notifySuccess('Đã ghi nhận chấm công thủ công!');
+      handleCloseManualAttendanceDialog();
+      fetchAttendances();
+    } catch (error: any) {
+      console.error('Failed to record manual attendance:', error);
+      if (error instanceof Error) {
+        const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể ghi nhận chấm công');
+        notifyError(errorMessage);
+      }
+    } finally {
+      setIsSubmittingManual(false);
+      setLoading(false);
+    }
   };
 
   const handleCopyQR = async (facilityId: number) => {
@@ -441,7 +577,7 @@ export default function ManagerAttendancesPage() {
         >
           Quản Lý Chấm Công
         </Typography>
-        <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-end', sm: 'flex-start' }}>
+        <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-end', sm: 'flex-start' }} flexWrap="wrap" useFlexGap>
           <Button
             variant="outlined"
             startIcon={<QrCode2Icon />}
@@ -450,6 +586,22 @@ export default function ManagerAttendancesPage() {
             sx={{ borderRadius: '8px', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
           >
             Mã QR
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={handleOpenBulkAssignDialog}
+            size="small"
+            sx={{ borderRadius: '8px', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+          >
+            Phân Ca
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={handleOpenManualAttendanceDialog}
+            size="small"
+            sx={{ borderRadius: '8px', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+          >
+            Chấm Công Thủ Công
           </Button>
           <Button
             variant="contained"
@@ -505,6 +657,7 @@ export default function ManagerAttendancesPage() {
             <TableHead>
               <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>ID</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>Định Danh</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>Nhân Viên</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>Ngày</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap', backgroundColor: '#F5F5F5' }}>Giờ Vào</TableCell>
@@ -541,6 +694,18 @@ export default function ManagerAttendancesPage() {
                   <TableRow key={attendance.id}>
                     <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{attendance.id}</TableCell>
                     <TableCell
+                        title={attendance.userName}
+                        sx={{
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                          maxWidth: { xs: 80, sm: 150, md: 200 },
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                    >
+                      {attendance.userName}
+                    </TableCell>
+                    <TableCell
                       title={attendance.fullName}
                       sx={{
                         fontSize: { xs: '0.75rem', sm: '0.875rem' },
@@ -553,7 +718,7 @@ export default function ManagerAttendancesPage() {
                       {attendance.fullName}
                     </TableCell>
                     <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>{parseDate(attendance.checkInDate).format('DD/MM/YYYY')}</TableCell>
-                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{parseDateTime(attendance.checkIn).format('HH:mm')}</TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{attendance.checkIn ? parseDateTime(attendance.checkIn).format('HH:mm') : '-'}</TableCell>
                     <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                       {attendance.checkOut ? parseDateTime(attendance.checkOut).format('HH:mm') : '-'}
                     </TableCell>
@@ -867,27 +1032,55 @@ export default function ManagerAttendancesPage() {
           Phân Ca Làm Việc
         </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Nhân viên: <strong>{selectedAttendance?.fullName}</strong>
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Ngày: <strong>{selectedAttendance ? parseDate(selectedAttendance.checkInDate).format('DD/MM/YYYY') : ''}</strong>
-          </Typography>
-          <FormControl fullWidth sx={{ mt: 1 }}>
-            <InputLabel>Chọn Ca</InputLabel>
-            <Select
-              value={selectedShiftId}
-              label="Chọn Ca"
-              onChange={(e) => setSelectedShiftId(e.target.value as number)}
-              sx={{ borderRadius: '8px' }}
-            >
-              {shifts.filter(s => s.isActive).map((shift) => (
-                <MenuItem key={shift.id} value={shift.id}>
-                  {shift.name} ({shift.startTime.substring(0, 5)} - {shift.endTime.substring(0, 5)})
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Stack spacing={2}>
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Nhân viên: <strong>{selectedAttendance?.fullName}</strong>
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                Ngày:
+              </Typography>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DateCalendar
+                  value={assignShiftDate}
+                  onChange={(newDate) => setAssignShiftDate(newDate)}
+                  readOnly
+                  sx={{
+                    width: '100%',
+                    '& .MuiPickersCalendarHeader-root': {
+                      paddingLeft: 1,
+                      paddingRight: 1,
+                    },
+                    '& .MuiDayCalendar-header': {
+                      justifyContent: 'space-around',
+                    },
+                    '& .MuiPickersDay-root': {
+                      fontSize: '0.875rem',
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+            </Box>
+
+            <FormControl fullWidth>
+              <InputLabel>Chọn Ca</InputLabel>
+              <Select
+                value={selectedShiftId}
+                label="Chọn Ca"
+                onChange={(e) => setSelectedShiftId(e.target.value as number)}
+                sx={{ borderRadius: '8px' }}
+              >
+                {shifts.filter(s => s.isActive).map((shift) => (
+                  <MenuItem key={shift.id} value={shift.id}>
+                    {shift.name} ({shift.startTime.substring(0, 5)} - {shift.endTime.substring(0, 5)})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
           <Button
@@ -910,6 +1103,193 @@ export default function ManagerAttendancesPage() {
             }}
           >
             {isAssigning ? <CircularProgress size={20} color="inherit" /> : 'Xác Nhận'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Bulk Shift Assignment Dialog */}
+      <BulkShiftAssignmentDialog
+        open={bulkAssignDialogOpen}
+        onClose={handleCloseBulkAssignDialog}
+        shifts={shifts}
+      />
+
+      {/* Manual Attendance Dialog */}
+      <Dialog
+        open={manualAttendanceDialogOpen}
+        onClose={handleCloseManualAttendanceDialog}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: '12px',
+            },
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>
+          Chấm Công Thủ Công
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            {/* Employee Selection */}
+            <FormControl fullWidth size="small">
+              <InputLabel>Chọn nhân viên *</InputLabel>
+              <Select
+                value={selectedEmployeeId}
+                label="Chọn nhân viên *"
+                onChange={(e) => setSelectedEmployeeId(e.target.value as number)}
+                sx={{ borderRadius: '8px' }}
+              >
+                <MenuItem value="" disabled>
+                  Chọn nhân viên
+                </MenuItem>
+                {employees.map((employee) => (
+                  <MenuItem key={employee.id} value={employee.id}>
+                    {employee.fullName} ({employee.employeeId})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Facility Selection */}
+            <FormControl fullWidth size="small">
+              <InputLabel>Chọn cơ sở *</InputLabel>
+              <Select
+                value={selectedFacilityId}
+                label="Chọn cơ sở *"
+                onChange={(e) => setSelectedFacilityId(e.target.value as number)}
+                sx={{ borderRadius: '8px' }}
+              >
+                <MenuItem value="" disabled>
+                  Chọn cơ sở
+                </MenuItem>
+                {facilities.map((facility) => (
+                  <MenuItem key={facility.id} value={facility.id}>
+                    {facility.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Shift Selection */}
+            <FormControl fullWidth size="small">
+              <InputLabel>Chọn ca *</InputLabel>
+              <Select
+                value={selectedShiftIdManual}
+                label="Chọn ca *"
+                onChange={(e) => setSelectedShiftIdManual(e.target.value as number)}
+                sx={{ borderRadius: '8px' }}
+              >
+                <MenuItem value="" disabled>
+                  Chọn ca
+                </MenuItem>
+                {shifts.filter(s => s.isActive).map((shift) => (
+                  <MenuItem key={shift.id} value={shift.id}>
+                    {shift.name} ({shift.startTime.substring(0, 5)} - {shift.endTime.substring(0, 5)})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Check-in Date */}
+            <TextField
+              label="Ngày chấm công *"
+              type="date"
+              value={checkInDate}
+              onChange={(e) => setCheckInDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+              size="small"
+              inputProps={{
+                max: dayjs().format('YYYY-MM-DD'),
+              }}
+              sx={{ borderRadius: '8px' }}
+            />
+
+            {/* Check-in Time */}
+            <TextField
+              label="Giờ vào *"
+              type="time"
+              value={checkInTime}
+              onChange={(e) => setCheckInTime(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+              size="small"
+              sx={{ borderRadius: '8px' }}
+            />
+
+            {/* Check-out Time */}
+            <TextField
+              label="Giờ ra *"
+              type="time"
+              value={checkOutTime}
+              onChange={(e) => setCheckOutTime(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+              size="small"
+              sx={{ borderRadius: '8px' }}
+            />
+
+            {/* Reason Selection */}
+            <FormControl fullWidth size="small">
+              <InputLabel>Lý do *</InputLabel>
+              <Select
+                value={selectedReason}
+                label="Lý do *"
+                onChange={(e) => handleReasonChange(e.target.value)}
+                sx={{ borderRadius: '8px' }}
+              >
+                <MenuItem value="" disabled>
+                  Chọn lý do
+                </MenuItem>
+                {PREDEFINED_REASONS.map((reason) => (
+                  <MenuItem key={reason} value={reason}>
+                    {reason}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Custom Reason Input */}
+            {selectedReason === 'Khác (vui lòng nhập lý do)' && (
+              <TextField
+                label="Nhập lý do *"
+                multiline
+                rows={3}
+                value={customReason}
+                onChange={(e) => handleCustomReasonChange(e.target.value)}
+                error={!!reasonError}
+                helperText={reasonError || `${customReason.length}/300 ký tự`}
+                fullWidth
+                size="small"
+                sx={{ borderRadius: '8px' }}
+              />
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button
+            onClick={handleCloseManualAttendanceDialog}
+            variant="outlined"
+            sx={{
+              borderRadius: '8px',
+              textTransform: 'none',
+            }}
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleSubmitManualAttendance}
+            variant="contained"
+            disabled={isSubmittingManual || !selectedEmployeeId || !selectedShiftIdManual || !selectedFacilityId || !selectedReason || (selectedReason === 'Khác (vui lòng nhập lý do)' && (!customReason || !!reasonError))}
+            sx={{
+              borderRadius: '8px',
+              textTransform: 'none',
+            }}
+          >
+            {isSubmittingManual ? <CircularProgress size={20} color="inherit" /> : 'Xác Nhận'}
           </Button>
         </DialogActions>
       </Dialog>

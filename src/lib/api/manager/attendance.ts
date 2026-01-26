@@ -6,7 +6,7 @@ export interface Attendance {
   userName: string;
   fullName: string;
   checkInDate: string;
-  checkIn: string;
+  checkIn?: string;
   checkOut?: string;
   shiftId?: number;
   insertedBy?: string | null;
@@ -154,6 +154,65 @@ export const assignShiftToManagerAttendance = async (
     }
     const error: ApiErrorResponse = await response.json();
     throw new Error(getErrorCode(error, 'Failed to assign shift'));
+  }
+
+  return response.json();
+};
+
+export interface RecordManualAttendanceRequest {
+  employeeId: number;
+  shiftId: number;
+  checkInDate: string;
+  checkInTime: string;
+  checkOutTime: string;
+  facilityId: number;
+  reason: string;
+}
+
+export interface RecordManualAttendanceResponse {
+  traceId: string;
+  data: {
+    attendanceId: number;
+    employeeUserName: string;
+    checkInDate: string;
+    checkInTime: string;
+    checkOutTime: string;
+  };
+}
+
+/**
+ * Record manual attendance for an employee
+ */
+export const recordManualAttendance = async (
+  request: RecordManualAttendanceRequest
+): Promise<RecordManualAttendanceResponse> => {
+  const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+
+  if (!accessToken) {
+    throw new Error('Access token not found. Please login first.');
+  }
+
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_MANAGER_ATTENDANCES}/record-manual`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        Referer: window.location.origin,
+      },
+      body: JSON.stringify(request),
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      const unauthorizedError = new Error('Unauthorized. Please login again.');
+      (unauthorizedError as any).status = 401;
+      throw unauthorizedError;
+    }
+    const error: ApiErrorResponse = await response.json();
+    throw new Error(getErrorCode(error, 'Failed to record manual attendance'));
   }
 
   return response.json();
