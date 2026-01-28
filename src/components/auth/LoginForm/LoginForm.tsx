@@ -39,6 +39,10 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
       localStorage.setItem(STORAGE_KEYS.TENANT, platform);
     }
 
+    if(!platform){
+      localStorage.setItem(STORAGE_KEYS.TENANT, "vincharm");
+    }
+
     loginApi(email, password, platform || undefined)
     .then((response) => {
       notifySuccess("Đăng nhập thành công")
