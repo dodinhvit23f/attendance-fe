@@ -195,13 +195,80 @@ export default function UserAttendancesPage() {
   };
 
   const handleCopyQR = async (facilityId: number) => {
-    const qrValue = facilityId.toString();
+    const svg = document.getElementById(`qr-${facilityId}`);
+    if (!svg) {
+      notifyError('Không tìm thấy mã QR.');
+      return;
+    }
+
+    // Get facility name for download fallback
+    const facility = facilities.find(f => f.id === facilityId);
+    const facilityName = facility?.name || `Facility-${facilityId}`;
+
+    // Feature detection for ClipboardItem support
+    const supportsClipboardItem = typeof ClipboardItem !== 'undefined' &&
+                                   navigator.clipboard &&
+                                   typeof navigator.clipboard.write === 'function';
+
     try {
-      await navigator.clipboard.writeText(qrValue);
-      notifySuccess('Đã sao chép mã QR!');
-    } catch {
+      // Serialize SVG to string
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      // Convert SVG to PNG
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => {
+          canvas.width = 500;
+          canvas.height = 500;
+          ctx?.drawImage(img, 0, 0, 500, 500);
+
+          if (supportsClipboardItem) {
+            // Try clipboard copy on supported browsers
+            canvas.toBlob(async (blob) => {
+              if (!blob) {
+                reject(new Error('Failed to create blob'));
+                return;
+              }
+
+              try {
+                await navigator.clipboard.write([
+                  new ClipboardItem({ 'image/png': blob })
+                ]);
+                notifySuccess('Đã sao chép mã QR!');
+                resolve();
+              } catch (clipboardError) {
+                // Clipboard failed, fall back to download
+                console.warn('Clipboard copy failed, falling back to download:', clipboardError);
+                downloadQRImage(canvas, facilityName);
+                notifySuccess('Đã tải xuống mã QR (thiết bị không hỗ trợ sao chép)');
+                resolve();
+              }
+            }, 'image/png');
+          } else {
+            // ClipboardItem not supported (mobile), auto-download
+            downloadQRImage(canvas, facilityName);
+            notifySuccess('Đã tải xuống mã QR (thiết bị di động)');
+            resolve();
+          }
+        };
+
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+      });
+    } catch (error) {
+      console.error('Failed to copy QR code:', error);
       notifyError('Không thể sao chép mã QR.');
     }
+  };
+
+  const downloadQRImage = (canvas: HTMLCanvasElement, facilityName: string) => {
+    const pngFile = canvas.toDataURL('image/png');
+    const downloadLink = document.createElement('a');
+    downloadLink.download = `QR-${facilityName}.png`;
+    downloadLink.href = pngFile;
+    downloadLink.click();
   };
 
   const handleDownloadQR = (facilityId: number, facilityName: string) => {
@@ -650,6 +717,10 @@ export default function UserAttendancesPage() {
                             backgroundColor: '#fff',
                             borderRadius: '12px',
                             border: '1px solid #E0E0E0',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            maxWidth: { xs: '100%', sm: '340px' },
                           }}
                       >
                         <QRCode
