@@ -13,6 +13,9 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import {Html5Qrcode} from 'html5-qrcode';
 import {useNotify} from '@/components/notification/NotificationProvider';
 
+// Html5QrcodeState enum value for SCANNING state
+const HTML5_QRCODE_STATE_SCANNING = 2;
+
 interface QRScannerInlineProps {
   onScan: (data: string) => void;
   onError?: (error: string) => void;
@@ -24,6 +27,7 @@ export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
                                                                 }) => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isMountedRef = useRef(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isScannerReady, setIsScannerReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,13 +49,18 @@ export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
           },
           (decodedText) => {
             onScan(decodedText);
-            stopScanner();
+            // Defer stop to next tick to avoid race condition on Android WebView
+            setTimeout(() => {
+              stopScanner();
+            }, 0);
           },
           () => {
           }
       );
 
-      setIsScannerReady(true);
+      if (isMountedRef.current) {
+        setIsScannerReady(true);
+      }
     } catch (err: any) {
       console.error('QR Scanner error:', err);
       let errorMessage = 'Không thể truy cập camera.';
@@ -64,11 +73,15 @@ export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
         errorMessage = 'Camera đang được sử dụng bởi ứng dụng khác.';
       }
 
-      setError(errorMessage);
-      notifyError(errorMessage);
-      onError?.(errorMessage);
+      if (isMountedRef.current) {
+        setError(errorMessage);
+        notifyError(errorMessage);
+        onError?.(errorMessage);
+      }
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -76,7 +89,7 @@ export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
     if (scannerRef.current) {
       try {
         const state = scannerRef.current.getState();
-        if (state === 2) {
+        if (state === HTML5_QRCODE_STATE_SCANNING) {
           await scannerRef.current.stop();
         }
       } catch (err) {
@@ -84,7 +97,9 @@ export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
       }
       scannerRef.current = null;
     }
-    setIsScannerReady(false);
+    if (isMountedRef.current) {
+      setIsScannerReady(false);
+    }
   };
 
   const handleUploadClick = () => {
@@ -112,11 +127,13 @@ export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
   };
 
   useEffect(() => {
+    isMountedRef.current = true;
     const timer = setTimeout(() => {
       startScanner();
     }, 100);
 
     return () => {
+      isMountedRef.current = false;
       clearTimeout(timer);
       stopScanner();
     };
