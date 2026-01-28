@@ -201,6 +201,15 @@ export default function UserAttendancesPage() {
       return;
     }
 
+    // Get facility name for download fallback
+    const facility = facilities.find(f => f.id === facilityId);
+    const facilityName = facility?.name || `Facility-${facilityId}`;
+
+    // Feature detection for ClipboardItem support
+    const supportsClipboardItem = typeof ClipboardItem !== 'undefined' &&
+                                   navigator.clipboard &&
+                                   typeof navigator.clipboard.write === 'function';
+
     try {
       // Serialize SVG to string
       const svgData = new XMLSerializer().serializeToString(svg);
@@ -208,30 +217,41 @@ export default function UserAttendancesPage() {
       const ctx = canvas.getContext('2d');
       const img = new Image();
 
-      // Convert SVG to PNG blob
+      // Convert SVG to PNG
       await new Promise<void>((resolve, reject) => {
         img.onload = () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx?.drawImage(img, 0, 0);
+          canvas.width = 500;
+          canvas.height = 500;
+          ctx?.drawImage(img, 0, 0, 500, 500);
 
-          canvas.toBlob(async (blob) => {
-            if (!blob) {
-              reject(new Error('Failed to create blob'));
-              return;
-            }
+          if (supportsClipboardItem) {
+            // Try clipboard copy on supported browsers
+            canvas.toBlob(async (blob) => {
+              if (!blob) {
+                reject(new Error('Failed to create blob'));
+                return;
+              }
 
-            try {
-              // Write image to clipboard
-              await navigator.clipboard.write([
-                new ClipboardItem({ 'image/png': blob })
-              ]);
-              notifySuccess('Đã sao chép mã QR!');
-              resolve();
-            } catch (clipboardError) {
-              reject(clipboardError);
-            }
-          }, 'image/png');
+              try {
+                await navigator.clipboard.write([
+                  new ClipboardItem({ 'image/png': blob })
+                ]);
+                notifySuccess('Đã sao chép mã QR!');
+                resolve();
+              } catch (clipboardError) {
+                // Clipboard failed, fall back to download
+                console.warn('Clipboard copy failed, falling back to download:', clipboardError);
+                downloadQRImage(canvas, facilityName);
+                notifySuccess('Đã tải xuống mã QR (thiết bị không hỗ trợ sao chép)');
+                resolve();
+              }
+            }, 'image/png');
+          } else {
+            // ClipboardItem not supported (mobile), auto-download
+            downloadQRImage(canvas, facilityName);
+            notifySuccess('Đã tải xuống mã QR (thiết bị di động)');
+            resolve();
+          }
         };
 
         img.onerror = () => reject(new Error('Failed to load image'));
@@ -241,6 +261,14 @@ export default function UserAttendancesPage() {
       console.error('Failed to copy QR code:', error);
       notifyError('Không thể sao chép mã QR.');
     }
+  };
+
+  const downloadQRImage = (canvas: HTMLCanvasElement, facilityName: string) => {
+    const pngFile = canvas.toDataURL('image/png');
+    const downloadLink = document.createElement('a');
+    downloadLink.download = `QR-${facilityName}.png`;
+    downloadLink.href = pngFile;
+    downloadLink.click();
   };
 
   const handleDownloadQR = (facilityId: number, facilityName: string) => {
@@ -630,16 +658,25 @@ export default function UserAttendancesPage() {
                   {/* QR Code */}
                   <Box
                     sx={{
-                      p: 2,
+                      p: { xs: 2, sm: 3 },
                       backgroundColor: '#fff',
                       borderRadius: '12px',
                       border: '1px solid #E0E0E0',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      maxWidth: { xs: '100%', sm: '340px' },
                     }}
                   >
                     <QRCode
                       id={`qr-${facility.id}`}
                       value={JSON.stringify(facility)}
-                      size={150}
+                      size={300}
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        maxWidth: '300px',
+                      }}
                     />
                   </Box>
 
