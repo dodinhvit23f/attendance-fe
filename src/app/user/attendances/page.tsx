@@ -195,11 +195,50 @@ export default function UserAttendancesPage() {
   };
 
   const handleCopyQR = async (facilityId: number) => {
-    const qrValue = facilityId.toString();
+    const svg = document.getElementById(`qr-${facilityId}`);
+    if (!svg) {
+      notifyError('Không tìm thấy mã QR.');
+      return;
+    }
+
     try {
-      await navigator.clipboard.writeText(qrValue);
-      notifySuccess('Đã sao chép mã QR!');
-    } catch {
+      // Serialize SVG to string
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      // Convert SVG to PNG blob
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx?.drawImage(img, 0, 0);
+
+          canvas.toBlob(async (blob) => {
+            if (!blob) {
+              reject(new Error('Failed to create blob'));
+              return;
+            }
+
+            try {
+              // Write image to clipboard
+              await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+              ]);
+              notifySuccess('Đã sao chép mã QR!');
+              resolve();
+            } catch (clipboardError) {
+              reject(clipboardError);
+            }
+          }, 'image/png');
+        };
+
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+      });
+    } catch (error) {
+      console.error('Failed to copy QR code:', error);
       notifyError('Không thể sao chép mã QR.');
     }
   };
@@ -214,9 +253,9 @@ export default function UserAttendancesPage() {
     const img = new Image();
 
     img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx?.drawImage(img, 0, 0);
+      canvas.width = 500;
+      canvas.height = 500;
+      ctx?.drawImage(img, 0, 0, 500, 500);
       const pngFile = canvas.toDataURL('image/png');
 
       const downloadLink = document.createElement('a');
