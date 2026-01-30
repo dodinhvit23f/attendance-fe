@@ -137,7 +137,7 @@ export default function ManagerAttendancesPage() {
         endDate,
         page,
         size: rowsPerPage,
-        sort: 'id,desc',
+        sort: 'checkInDate,desc',
       });
       if (response.data?.attendances) {
         setAttendances(response.data.attendances);

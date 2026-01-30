@@ -184,7 +184,7 @@ export default function EmployeesPage() {
       // Update local state
       setEmployees((prevEmployees) =>
           prevEmployees.map((emp) =>
-              emp.id === id ? {...emp, active: newStatus} : emp
+              emp.id === id ? {...emp, active: newStatus, version: employee.version + 1} : emp
           )
       );
 
