@@ -46,6 +46,9 @@ export const refreshTokenApi = async (): Promise<RefreshTokenResponse> => {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${refreshToken}`,
     },
+    body: JSON.stringify({
+      'refreshToken' : refreshToken
+    })
   });
 
   if (!response.ok) {
