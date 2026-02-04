@@ -31,6 +31,12 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
     }
   };
 
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const value = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    setOtp(value);
+  };
+
   const handleConfirm = async () => {
     if (otp.length !== 6) {
       notifyError?.('Vui lòng nhập đầy đủ số OTP');
@@ -108,6 +114,7 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
             variant="outlined"
             value={otp}
             onChange={handleOtpChange}
+            onPaste={handleOtpPaste}
             slotProps={{
               htmlInput: {
                 maxLength: 6,

@@ -19,7 +19,23 @@ export const CodeVerification: React.FC<CodeVerificationProps> = ({
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleChange = (index: number, value: string) => {
-    // Only allow digits
+    // Handle multi-character input (Samsung keyboard auto-paste)
+    if (value.length > 1) {
+      const digits = value.replace(/\D/g, '').slice(0, codeLength);
+      if (digits.length > 0) {
+        const newCode = Array(codeLength).fill('');
+        digits.split('').forEach((char, idx) => {
+          newCode[idx] = char;
+        });
+        setCode(newCode);
+        setError('');
+        const lastFilledIndex = Math.min(digits.length, codeLength - 1);
+        inputRefs.current[lastFilledIndex]?.focus();
+      }
+      return;
+    }
+
+    // Only allow single digits
     if (value && !/^\d$/.test(value)) {
       return;
     }
@@ -107,7 +123,7 @@ export const CodeVerification: React.FC<CodeVerificationProps> = ({
         {code.map((digit, index) => (
           <TextField
             key={index}
-            inputRef={(el) => (inputRefs.current[index] = el)}
+          inputRef={(el) => (inputRefs.current[index] = el)}
             value={digit}
             onChange={(e: ChangeEvent<HTMLInputElement>) =>
               handleChange(index, e.target.value)
@@ -115,9 +131,11 @@ export const CodeVerification: React.FC<CodeVerificationProps> = ({
             onKeyDown={(e: KeyboardEvent<HTMLDivElement>) =>
               handleKeyDown(index, e)
             }
-            onPaste={index === 0 ? handlePaste : undefined}
+            onPaste={handlePaste}
             inputProps={{
               maxLength: 1,
+              inputMode: 'numeric',
+              pattern: '[0-9]*',
               style: {
                 textAlign: 'center',
                 fontSize: '24px',
