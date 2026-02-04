@@ -23,7 +23,22 @@ export function LoadingScreen() {
             gap: 3,
           }}
       >
-        <CircularProgress size={60} thickness={4} sx={{ color: "primary.main" }} />
+        <Box sx={{ position: "relative", width: 60, height: 60 }}>
+          <CircularProgress size={60} thickness={4} sx={{ color: "primary.main" }} />
+          <Box
+            component="img"
+            src="/favicon.ico"
+            alt="logo"
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 28,
+              height: 28,
+            }}
+          />
+        </Box>
         <Typography variant="h6" color="text.secondary" fontWeight="medium">
           Đang tải...
         </Typography>
