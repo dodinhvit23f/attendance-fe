@@ -352,7 +352,9 @@ export default function UserAttendancesPage() {
   };
 
   const handleQRScan = async (scannedData: string) => {
+
     if (isCheckingIn) return;
+
 
     let scannedFacility: UserFacility | null = null;
     try {
@@ -365,6 +367,7 @@ export default function UserAttendancesPage() {
       ) {
         throw new Error('Invalid facility data');
       }
+
       scannedFacility = parsed as UserFacility;
     } catch {
       notifyError('Mã QR không hợp lệ. Vui lòng thử lại.');
@@ -388,7 +391,7 @@ export default function UserAttendancesPage() {
       return;
     }
 
-    if (userLocation.accuracy > Math.max(50, matchedFacility.allowDistance / 2)) {
+    if (userLocation.accuracy > Math.max(150, matchedFacility.allowDistance / 2)) {
       notifyError(
           `Tín hiệu GPS yếu (sai số ${Math.round(userLocation.accuracy)}m). Vui lòng ra ngoài trời và thử lại.`
       );
