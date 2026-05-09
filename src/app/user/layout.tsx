@@ -3,7 +3,8 @@
 import * as React from 'react';
 import { AppProvider } from '@toolpad/core/AppProvider';
 import { DashboardLayout } from '@toolpad/core/DashboardLayout';
-import { Navigation, NotificationsProvider } from '@toolpad/core';
+import { Navigation } from '@toolpad/core';
+import { NotificationsProvider } from '@toolpad/core/useNotifications';
 import { usePathname, useRouter } from 'next/navigation';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssignmentIcon from '@mui/icons-material/Assignment';
