@@ -141,7 +141,10 @@ export default function ManagerAttendancesPage() {
       });
       if (response.data?.attendances) {
         setAttendances(response.data.attendances);
-        setTotalElements(response.data.totalElements);
+        setTotalElements(response.data.totalElements ?? response.data.attendances.length);
+      } else {
+        setAttendances([]);
+        setTotalElements(0);
       }
     } catch (error) {
       console.error('Failed to fetch attendances:', error);
@@ -650,14 +653,21 @@ export default function ManagerAttendancesPage() {
           >
             Quản Lý Chấm Công
           </Typography>
-          <Stack direction="row" spacing={1} justifyContent={{xs: 'flex-end', sm: 'flex-start'}}
-                 flexWrap="wrap" useFlexGap>
+          <Stack
+              direction={{xs: 'column', sm: 'row'}}
+              spacing={1}
+              justifyContent={{xs: 'stretch', sm: 'flex-start'}}
+              flexWrap="wrap"
+              useFlexGap
+              sx={{width: {xs: '100%', sm: 'auto'}}}
+          >
             <Button
                 variant="outlined"
                 startIcon={<QrCode2Icon/>}
                 onClick={handleOpenQRDialog}
                 size="small"
-                sx={{borderRadius: '8px', fontSize: {xs: '0.75rem', sm: '0.875rem'}}}
+                fullWidth
+                sx={{borderRadius: '8px', fontSize: {xs: '0.8rem', sm: '0.875rem'}, width: {xs: '100%', sm: 'auto'}}}
             >
               Mã QR
             </Button>
@@ -665,7 +675,8 @@ export default function ManagerAttendancesPage() {
                 variant="outlined"
                 onClick={handleOpenBulkAssignDialog}
                 size="small"
-                sx={{borderRadius: '8px', fontSize: {xs: '0.75rem', sm: '0.875rem'}}}
+                fullWidth
+                sx={{borderRadius: '8px', fontSize: {xs: '0.8rem', sm: '0.875rem'}, width: {xs: '100%', sm: 'auto'}}}
             >
               Phân Ca
             </Button>
@@ -673,7 +684,8 @@ export default function ManagerAttendancesPage() {
                 variant="outlined"
                 onClick={handleOpenManualAttendanceDialog}
                 size="small"
-                sx={{borderRadius: '8px', fontSize: {xs: '0.75rem', sm: '0.875rem'}}}
+                fullWidth
+                sx={{borderRadius: '8px', fontSize: {xs: '0.8rem', sm: '0.875rem'}, width: {xs: '100%', sm: 'auto'}}}
             >
               Chấm Công Thủ Công
             </Button>
@@ -682,7 +694,8 @@ export default function ManagerAttendancesPage() {
                 startIcon={<AddIcon/>}
                 onClick={handleOpenDialog}
                 size="small"
-                sx={{borderRadius: '8px', fontSize: {xs: '0.75rem', sm: '0.875rem'}}}
+                fullWidth
+                sx={{borderRadius: '8px', fontSize: {xs: '0.8rem', sm: '0.875rem'}, width: {xs: '100%', sm: 'auto'}}}
             >
               Chấm công
             </Button>
@@ -713,7 +726,8 @@ export default function ManagerAttendancesPage() {
 
         {/* Attendance Table */}
         <Box sx={{
-          height: 'calc(100vh - 260px)',
+          height: { xs: 'auto', md: 'calc(100vh - 260px)' },
+          minHeight: { xs: 400, md: 'auto' },
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
@@ -734,13 +748,15 @@ export default function ManagerAttendancesPage() {
                     fontWeight: 600,
                     fontSize: {xs: '0.75rem', sm: '0.875rem'},
                     whiteSpace: 'nowrap',
-                    backgroundColor: '#F5F5F5'
+                    backgroundColor: '#F5F5F5',
+                    display: {xs: 'none', md: 'table-cell'},
                   }}>ID</TableCell>
                   <TableCell sx={{
                     fontWeight: 600,
                     fontSize: {xs: '0.75rem', sm: '0.875rem'},
                     whiteSpace: 'nowrap',
-                    backgroundColor: '#F5F5F5'
+                    backgroundColor: '#F5F5F5',
+                    display: {xs: 'none', lg: 'table-cell'},
                   }}>Định Danh</TableCell>
                   <TableCell sx={{
                     fontWeight: 600,
@@ -764,32 +780,36 @@ export default function ManagerAttendancesPage() {
                     fontWeight: 600,
                     fontSize: {xs: '0.75rem', sm: '0.875rem'},
                     whiteSpace: 'nowrap',
-                    backgroundColor: '#F5F5F5'
+                    backgroundColor: '#F5F5F5',
+                    display: {xs: 'none', sm: 'table-cell'},
                   }}>Giờ Ra</TableCell>
                   <TableCell sx={{
                     fontWeight: 600,
                     fontSize: {xs: '0.75rem', sm: '0.875rem'},
                     whiteSpace: 'nowrap',
-                    backgroundColor: '#F5F5F5'
+                    backgroundColor: '#F5F5F5',
+                    display: {xs: 'none', md: 'table-cell'},
                   }}>Ca</TableCell>
                   <TableCell sx={{
                     fontWeight: 600,
                     fontSize: {xs: '0.75rem', sm: '0.875rem'},
                     whiteSpace: 'nowrap',
-                    backgroundColor: '#F5F5F5'
+                    backgroundColor: '#F5F5F5',
+                    display: {xs: 'none', lg: 'table-cell'},
                   }}>Tạo Bởi</TableCell>
                   <TableCell sx={{
                     fontWeight: 600,
                     fontSize: {xs: '0.75rem', sm: '0.875rem'},
                     whiteSpace: 'nowrap',
-                    backgroundColor: '#F5F5F5'
+                    backgroundColor: '#F5F5F5',
+                    display: {xs: 'none', lg: 'table-cell'},
                   }}>Thay Đổi Bởi</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={6} sx={{border: 0}}>
+                      <TableCell colSpan={9} sx={{border: 0}}>
                         <Box sx={{
                           display: 'flex',
                           justifyContent: 'center',
@@ -805,7 +825,7 @@ export default function ManagerAttendancesPage() {
                     </TableRow>
                 ) : attendances.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} sx={{border: 0}}>
+                      <TableCell colSpan={9} sx={{border: 0}}>
                         <Box sx={{textAlign: 'center', py: {xs: 4, sm: 8}}}>
                           <Typography variant="body1" color="text.secondary" gutterBottom>
                             Chưa có dữ liệu
@@ -817,10 +837,8 @@ export default function ManagerAttendancesPage() {
                     attendances.map((attendance) => (
                         <TableRow key={attendance.id}>
                           <TableCell sx={{
-                            fontSize: {
-                              xs: '0.75rem',
-                              sm: '0.875rem'
-                            }
+                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                            display: { xs: 'none', md: 'table-cell' },
                           }}>{attendance.id}</TableCell>
                           <TableCell
                               title={attendance.userName}
@@ -830,6 +848,7 @@ export default function ManagerAttendancesPage() {
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
+                                display: { xs: 'none', lg: 'table-cell' },
                               }}
                           >
                             {attendance.userName}
@@ -838,7 +857,7 @@ export default function ManagerAttendancesPage() {
                               title={attendance.fullName}
                               sx={{
                                 fontSize: {xs: '0.75rem', sm: '0.875rem'},
-                                maxWidth: {xs: 80, sm: 150, md: 200},
+                                maxWidth: {xs: 120, sm: 150, md: 200},
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
@@ -851,15 +870,18 @@ export default function ManagerAttendancesPage() {
                             whiteSpace: 'nowrap'
                           }}>{parseDate(attendance.checkInDate).format('DD/MM/YYYY')}</TableCell>
                           <TableCell sx={{
-                            fontSize: {
-                              xs: '0.75rem',
-                              sm: '0.875rem'
-                            }
+                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
                           }}>{attendance.checkIn ? parseDateTime(attendance.checkIn).format('HH:mm') : '-'}</TableCell>
-                          <TableCell sx={{fontSize: {xs: '0.75rem', sm: '0.875rem'}}}>
+                          <TableCell sx={{
+                            fontSize: {xs: '0.75rem', sm: '0.875rem'},
+                            display: { xs: 'none', sm: 'table-cell' },
+                          }}>
                             {attendance.checkOut ? parseDateTime(attendance.checkOut).format('HH:mm') : '-'}
                           </TableCell>
-                          <TableCell sx={{fontSize: {xs: '0.75rem', sm: '0.875rem'}}}>
+                          <TableCell sx={{
+                            fontSize: {xs: '0.75rem', sm: '0.875rem'},
+                            display: { xs: 'none', md: 'table-cell' },
+                          }}>
                             {attendance.shiftId ? (
                                 <Chip
                                     label={getShiftName(attendance.shiftId) || `Ca ${attendance.shiftId}`}
@@ -884,7 +906,8 @@ export default function ManagerAttendancesPage() {
                           </TableCell>
                           <TableCell sx={{
                             fontSize: {xs: '0.75rem', sm: '0.875rem'},
-                            maxWidth: {xs: 100, sm: 150}
+                            maxWidth: {xs: 100, sm: 150},
+                            display: { xs: 'none', lg: 'table-cell' },
                           }}>
                             {attendance.insertedBy ? (
                                 <Chip
@@ -901,7 +924,8 @@ export default function ManagerAttendancesPage() {
                           </TableCell>
                           <TableCell sx={{
                             fontSize: {xs: '0.75rem', sm: '0.875rem'},
-                            maxWidth: {xs: 120, sm: 180}
+                            maxWidth: {xs: 120, sm: 180},
+                            display: { xs: 'none', lg: 'table-cell' },
                           }}>
                             {attendance.updatedBy ? (
                                 <Box
@@ -910,9 +934,11 @@ export default function ManagerAttendancesPage() {
                                       flexWrap: 'wrap',
                                       gap: {xs: 0.5, sm: 0.75},
                                       alignItems: 'center',
+                                      maxHeight: 60,
+                                      overflow: 'hidden',
                                     }}
                                 >
-                                  {attendance.updatedBy.split(",").map(
+                                  {attendance.updatedBy.split(",").slice(0, 3).map(
                                       (username) => (
                                           <Chip
                                               key={`user-${username}`}
@@ -926,6 +952,16 @@ export default function ManagerAttendancesPage() {
                                               }}
                                           />
                                       )
+                                  )}
+                                  {attendance.updatedBy.split(",").length > 3 && (
+                                    <Chip
+                                      label={`+${attendance.updatedBy.split(",").length - 3}`}
+                                      size="small"
+                                      sx={{
+                                        fontSize: {xs: '0.65rem', sm: '0.75rem'},
+                                        height: {xs: 20, sm: 24},
+                                      }}
+                                    />
                                   )}
                                 </Box>
                             ) : ('-')}

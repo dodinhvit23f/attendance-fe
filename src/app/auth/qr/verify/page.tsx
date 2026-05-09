@@ -15,32 +15,30 @@ export default function QRVerifyPage() {
   const router = useRouter()
   const {setLoading} = useLoading()
 
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
   const handleConfirm = async (code: string) => {
+    if (isSubmitting) return;
     try {
+      setIsSubmitting(true);
       setLoading(true);
 
-      // Call OTP verification API
       const response = await otpLoginApi(code);
 
-      // Store tokens and roles in localStorage
       localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.data.accessToken);
       localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.data.refreshToken);
       localStorage.setItem(STORAGE_KEYS.ROLES, JSON.stringify(response.data.roles));
       localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN)
-      // Show success notification
       notifySuccess('Xác thực thành công!');
 
-      // Redirect to /admin if user has ADMIN role
       if (response.data.roles.includes('ADMIN')) {
         router.push('/admin');
-      } else if (response.data.roles.includes('ADMIN')){
+      } else if (response.data.roles.includes('MANAGER')) {
         router.push('/manager');
       } else {
-        router.push('/manager');
+        router.push('/user');
       }
     } catch (error) {
-      setLoading(false);
-
       if(error instanceof Error){
         if (error.message == "ERROR_AUTH_011") {
           router.push('/');
@@ -51,22 +49,21 @@ export default function QRVerifyPage() {
       }
 
       notifyError('Xác thực thất bại. Vui lòng thử lại.');
+    } finally {
+      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Check if OTP_TOKEN exists
     const otpToken = localStorage.getItem(STORAGE_KEYS.OTP_TOKEN);
 
     if (!otpToken || otpToken.trim() === '') {
-      // Redirect to home if OTP_TOKEN doesn't exist or is empty
       router.push('/');
       return;
     }
 
-    setTimeout(() => {
-      setLoading(false)
-    }, 1000)
+    setLoading(false);
   }, [router, setLoading]);
 
   return (
@@ -121,7 +118,7 @@ export default function QRVerifyPage() {
               </Stack>
 
               {/* Code Verification Component */}
-              <CodeVerification onConfirm={handleConfirm} codeLength={6}/>
+              <CodeVerification onConfirm={handleConfirm} codeLength={6} loading={isSubmitting}/>
             </Stack>
           </Paper>
         </Box>

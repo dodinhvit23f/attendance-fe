@@ -1,17 +1,19 @@
 'use client';
 
 import React, { useState, useRef, KeyboardEvent, ChangeEvent } from 'react';
-import {Stack, TextField, Button, Typography, useTheme, Link} from '@mui/material';
+import {Stack, TextField, Button, Typography, useTheme, Link, CircularProgress} from '@mui/material';
 import { CheckCircle } from '@mui/icons-material';
 
 interface CodeVerificationProps {
   onConfirm?: (code: string) => void;
   codeLength?: number;
+  loading?: boolean;
 }
 
 export const CodeVerification: React.FC<CodeVerificationProps> = ({
   onConfirm,
   codeLength = 6,
+  loading = false,
 }) => {
   const theme = useTheme();
   const [code, setCode] = useState<string[]>(Array(codeLength).fill(''));
@@ -144,7 +146,8 @@ export const CodeVerification: React.FC<CodeVerificationProps> = ({
               },
             }}
             sx={{
-              width: { xs: '45px', sm: '56px' },
+              width: { xs: '48px', sm: '56px' },
+              minHeight: '52px',
               '& .MuiOutlinedInput-root': {
                 borderRadius: '12px',
                 backgroundColor: '#FFFFFF',
@@ -196,7 +199,7 @@ export const CodeVerification: React.FC<CodeVerificationProps> = ({
         }}
       >
         <Link
-            href="/s"
+            href="/"
             underline="hover"
             sx={{
               color: theme.palette.text.secondary,
@@ -215,9 +218,9 @@ export const CodeVerification: React.FC<CodeVerificationProps> = ({
         variant="contained"
         fullWidth
         size="large"
-        startIcon={<CheckCircle />}
+        startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <CheckCircle />}
         onClick={handleConfirm}
-        disabled={!isCodeComplete}
+        disabled={!isCodeComplete || loading}
         sx={{
           borderRadius: '24px',
           padding: '12px 24px',
@@ -238,7 +241,7 @@ export const CodeVerification: React.FC<CodeVerificationProps> = ({
           },
         }}
       >
-        Xác nhận
+        {loading ? 'Đang xác thực...' : 'Xác nhận'}
       </Button>
     </Stack>
   );

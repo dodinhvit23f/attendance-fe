@@ -91,7 +91,7 @@ export default function ManagerUsersPage() {
       });
       if (Array.isArray(response.data.employees)) {
         setEmployees(response.data.employees);
-        setTotalElements(response.data.totalElements);
+        setTotalElements(response.data.totalElements ?? response.data.employees.length);
       } else {
         console.error('Invalid response format: employees is not an array', response);
         setEmployees([]);
@@ -205,7 +205,8 @@ export default function ManagerUsersPage() {
 
         {/* Employees Table */}
         <Box sx={{
-          height: 'calc(100vh - 280px)',
+          height: { xs: 'auto', md: 'calc(100vh - 280px)' },
+          minHeight: { xs: 400, md: 'auto' },
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
@@ -221,11 +222,11 @@ export default function ManagerUsersPage() {
             <Table stickyHeader>
               <TableHead>
                 <TableRow sx={{backgroundColor: '#F5F5F5'}}>
-                  <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5'}}>Mã Nhân Viên</TableCell>
+                  <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5', display: { xs: 'none', md: 'table-cell' }}}>Mã Nhân Viên</TableCell>
                   <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5'}}>Họ Tên</TableCell>
-                  <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5'}}>Email</TableCell>
-                  <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5'}}>Số Điện Thoại</TableCell>
-                  <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5'}}>Giới Tính</TableCell>
+                  <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5', display: { xs: 'none', md: 'table-cell' }}}>Email</TableCell>
+                  <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5', display: { xs: 'none', lg: 'table-cell' }}}>Số Điện Thoại</TableCell>
+                  <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5', display: { xs: 'none', md: 'table-cell' }}}>Giới Tính</TableCell>
                   <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5'}}>Vai Trò</TableCell>
                   <TableCell sx={{fontWeight: 600, backgroundColor: '#F5F5F5'}}>Trạng Thái</TableCell>
                 </TableRow>
@@ -262,11 +263,11 @@ export default function ManagerUsersPage() {
                             key={employee.id}
                             sx={{'&:hover': {backgroundColor: '#F9F9F9'}}}
                         >
-                          <TableCell>{employee.employeeId}</TableCell>
+                          <TableCell sx={{ display: { xs: 'none', md: 'table-cell' }}}>{employee.employeeId}</TableCell>
                           <TableCell
                             title={employee.fullName}
                             sx={{
-                              maxWidth: {xs: 100, sm: 150, md: 200},
+                              maxWidth: {xs: 140, sm: 150, md: 200},
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
@@ -277,6 +278,7 @@ export default function ManagerUsersPage() {
                           <TableCell
                             title={employee.email}
                             sx={{
+                              display: { xs: 'none', md: 'table-cell' },
                               maxWidth: {xs: 120, sm: 180, md: 250},
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -288,6 +290,7 @@ export default function ManagerUsersPage() {
                           <TableCell
                             title={employee.phoneNumber}
                             sx={{
+                              display: { xs: 'none', lg: 'table-cell' },
                               maxWidth: {xs: 90, sm: 120, md: 150},
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -296,7 +299,7 @@ export default function ManagerUsersPage() {
                           >
                             {employee.phoneNumber}
                           </TableCell>
-                          <TableCell>
+                          <TableCell sx={{ display: { xs: 'none', md: 'table-cell' }}}>
                             {employee.gender === 'MALE' ? 'Nam' : employee.gender === 'FEMALE' ? 'Nữ' : employee.gender}
                           </TableCell>
                           <TableCell>

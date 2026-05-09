@@ -37,6 +37,7 @@ export default function EmployeesPage() {
   const {setLoading} = useLoading();
   const {notifySuccess, notifyError} = useNotify();
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [debouncedQuery, setDebouncedQuery] = React.useState('');
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   const [updateDialogOpen, setUpdateDialogOpen] = React.useState(false);
   const [selectedEmployee, setSelectedEmployee] = React.useState<UpdateEmployeeData | null>(null);
@@ -48,10 +49,8 @@ export default function EmployeesPage() {
   const [totalElements, setTotalElements] = React.useState(0);
   const [error, setError] = React.useState<string | null>(null);
   const [togglingId, setTogglingId] = React.useState<number | null>(null);
-  const [rolesLoaded, setRolesLoaded] = React.useState(false);
-  const [facilitiesLoaded, setFacilitiesLoaded] = React.useState(false);
+  const [dependenciesLoaded, setDependenciesLoaded] = React.useState(false);
   const [shifts, setShifts] = React.useState<Shift[]>([]);
-  const [shiftsLoaded, setShiftsLoaded] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
 
   const fetchEmployees = async () => {
@@ -65,7 +64,7 @@ export default function EmployeesPage() {
         tenant: 'attendance',
       });
       setEmployees(response.data.employees);
-      setTotalElements(response.data.totalElements);
+      setTotalElements(response.data.totalElements ?? 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch employees');
       console.error('Error fetching employees:', err);
@@ -75,66 +74,43 @@ export default function EmployeesPage() {
     }
   };
 
-  // Step 1: Fetch roles on component mount
   useEffect(() => {
-    const fetchRoles = async () => {
-      try {
-        const response = await getRoles();
-        setRoles(response.data);
-        setRolesLoaded(true);
-      } catch (err) {
-        console.error('Error fetching roles:', err);
-        setRolesLoaded(true); // Set to true even on error to prevent infinite waiting
-      }
+    const id = setTimeout(() => setDebouncedQuery(searchQuery.trim().toLowerCase()), 300);
+    return () => clearTimeout(id);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadDependencies = async () => {
+      const [rolesRes, facilitiesRes, shiftsRes] = await Promise.allSettled([
+        getRoles(),
+        getFacilitiesLight(),
+        getShifts(),
+      ]);
+      if (cancelled) return;
+      if (rolesRes.status === 'fulfilled') setRoles(rolesRes.value.data);
+      if (facilitiesRes.status === 'fulfilled') setFacilities(facilitiesRes.value.data);
+      if (shiftsRes.status === 'fulfilled') setShifts(shiftsRes.value.data.shifts || []);
+      setDependenciesLoaded(true);
     };
+    loadDependencies();
+    return () => { cancelled = true; };
+  }, []);
 
-    if (!rolesLoaded) {
-      fetchRoles();
-    }
-  }, [rolesLoaded]);
-
-  // Step 2: Fetch facilities after roles are loaded
   useEffect(() => {
-    const fetchFacilities = async () => {
-      try {
-        const response = await getFacilitiesLight();
-        setFacilities(response.data);
-        setFacilitiesLoaded(true);
-      } catch (err) {
-        console.error('Error fetching facilities:', err);
-        setFacilitiesLoaded(true); // Set to true even on error to prevent infinite waiting
-      }
-    };
-
-    if (rolesLoaded && !facilitiesLoaded) {
-      fetchFacilities();
-    }
-  }, [rolesLoaded, facilitiesLoaded]);
-
-  // Step 2.5: Fetch shifts after roles are loaded
-  useEffect(() => {
-    const fetchShifts = async () => {
-      try {
-        const response = await getShifts();
-        setShifts(response.data.shifts || []);
-        setShiftsLoaded(true);
-      } catch (err) {
-        console.error('Error fetching shifts:', err);
-        setShiftsLoaded(true); // Set to true even on error to prevent infinite waiting
-      }
-    };
-
-    if (rolesLoaded && !shiftsLoaded) {
-      fetchShifts();
-    }
-  }, [rolesLoaded, shiftsLoaded]);
-
-  // Step 3: Fetch employees after roles, facilities, and shifts are loaded
-  useEffect(() => {
-    if (rolesLoaded && facilitiesLoaded && shiftsLoaded) {
+    if (dependenciesLoaded) {
       fetchEmployees();
     }
-  }, [page, rowsPerPage, rolesLoaded, facilitiesLoaded, shiftsLoaded]);
+  }, [page, rowsPerPage, dependenciesLoaded]);
+
+  const filteredEmployees = React.useMemo(() => {
+    if (!debouncedQuery) return employees;
+    return employees.filter((e) =>
+      e.fullName.toLowerCase().includes(debouncedQuery) ||
+      e.email.toLowerCase().includes(debouncedQuery) ||
+      e.employeeId.toLowerCase().includes(debouncedQuery)
+    );
+  }, [employees, debouncedQuery]);
 
 
   const handleAddEmployee = () => {
@@ -306,7 +282,8 @@ export default function EmployeesPage() {
 
         {/* Employee Table */}
         <Box sx={{
-          height: 'calc(100vh - 320px)',
+          height: { xs: 'auto', md: 'calc(100vh - 320px)' },
+          minHeight: { xs: 400, md: 'auto' },
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
@@ -347,31 +324,35 @@ export default function EmployeesPage() {
                         </Box>
                       </TableCell>
                     </TableRow>
-                ) : !employees || employees.length === 0 ? (
+                ) : !filteredEmployees || filteredEmployees.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={9} sx={{border: 0}}>
                         <Box sx={{textAlign: 'center', py: 8}}>
                           <Typography variant="h6" color="text.secondary" gutterBottom>
-                            Chưa có nhân viên nào
+                            {debouncedQuery ? 'Không tìm thấy nhân viên phù hợp' : 'Chưa có nhân viên nào'}
                           </Typography>
-                          <Typography color="text.secondary" sx={{mb: 2}}>
-                            Bắt đầu bằng cách thêm nhân viên đầu tiên
-                          </Typography>
-                          <Button
-                              variant="contained"
-                              startIcon={<AddIcon/>}
-                              onClick={handleAddEmployee}
-                              sx={{
-                                fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                              }}
-                          >
-                            Thêm Nhân Viên
-                          </Button>
+                          {!debouncedQuery && (
+                            <>
+                              <Typography color="text.secondary" sx={{mb: 2}}>
+                                Bắt đầu bằng cách thêm nhân viên đầu tiên
+                              </Typography>
+                              <Button
+                                  variant="contained"
+                                  startIcon={<AddIcon/>}
+                                  onClick={handleAddEmployee}
+                                  sx={{
+                                    fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                                  }}
+                              >
+                                Thêm Nhân Viên
+                              </Button>
+                            </>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
                 ) : (
-                    employees.map((employee) => (
+                    filteredEmployees.map((employee) => (
                         <TableRow
                             key={employee.id}
                             sx={{'&:hover': {backgroundColor: '#F9F9F9'}}}
