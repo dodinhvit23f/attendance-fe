@@ -5,7 +5,3 @@ export { CreateEmployeeDialog } from './CreateEmployeeDialog';
 
 export { UpdateEmployeeDialog } from './UpdateEmployeeDialog';
 export type { UpdateEmployeeData } from './UpdateEmployeeDialog';
-
-export { MapPicker } from './MapPicker';
-
-export { CameraCapture } from './CameraCapture';
