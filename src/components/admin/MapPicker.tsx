@@ -317,7 +317,7 @@ export const MapPicker: React.FC<MapPickerProps> = ({
       ref={mapContainerRef}
       sx={{
         width: '100%',
-        height: 300,
+        height: { xs: 240, sm: 320, md: 400 },
         borderRadius: '8px',
         overflow: 'hidden',
         border: '2px solid #E0E0E0',

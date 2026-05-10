@@ -13,8 +13,9 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import {Html5Qrcode} from 'html5-qrcode';
 import {useNotify} from '@/components/notification/NotificationProvider';
 
-// Html5QrcodeState enum value for SCANNING state
+// Html5QrcodeState enum values
 const HTML5_QRCODE_STATE_SCANNING = 2;
+const HTML5_QRCODE_STATE_PAUSED = 3;
 
 interface QRScannerInlineProps {
   onScan: (data: string) => void;
@@ -41,11 +42,15 @@ export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
       const scanner = new Html5Qrcode('qr-reader-inline');
       scannerRef.current = scanner;
 
+      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 320;
+      const qrSize = Math.max(180, Math.min(280, viewportWidth - 80));
+
       await scanner.start(
           {facingMode: 'environment'},
           {
             fps: 10,
-            qrbox: {width: 250, height: 250},
+            qrbox: {width: qrSize, height: qrSize},
+            aspectRatio: 1.0,
           },
           (decodedText) => {
             onScan(decodedText);
@@ -89,9 +94,10 @@ export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
     if (scannerRef.current) {
       try {
         const state = scannerRef.current.getState();
-        if (state === HTML5_QRCODE_STATE_SCANNING) {
+        if (state === HTML5_QRCODE_STATE_SCANNING || state === HTML5_QRCODE_STATE_PAUSED) {
           await scannerRef.current.stop();
         }
+        scannerRef.current.clear();
       } catch (err) {
         console.error('Error stopping scanner:', err);
       }
@@ -189,7 +195,6 @@ export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
               '& video': {
                 borderRadius: '8px',
                 width: '100% !important',
-                transform: 'scaleX(-1)',
               },
               '& #qr-shaded-region': {},
             }}
@@ -228,12 +233,7 @@ export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
         </Stack>
 
         {/* Hidden element for scanning uploaded images */}
-        <Box id="qr-reader-upload" sx={{
-          display: 'none',
-          '& video': {
-            transform: 'scaleX(-1)',
-          }
-        }}/>
+        <Box id="qr-reader-upload" sx={{ display: 'none' }}/>
       </Box>
   );
 };

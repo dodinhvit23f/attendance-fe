@@ -1,8 +1,9 @@
 'use client';
 
 import React, {useState} from 'react';
-import {Box, Button, Stack, TextField, Typography, useTheme} from '@mui/material';
+import {Box, Button, CircularProgress, IconButton, Stack, TextField, Tooltip, Typography, useTheme} from '@mui/material';
 import {CheckCircle} from '@mui/icons-material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import QRCode from 'react-qr-code';
 import {otpVerifyApi} from '@/lib/api/auth';
 import {useRouter} from 'next/navigation';
@@ -23,6 +24,27 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
   const theme = useTheme();
   const router = useRouter();
   const [otp, setOtp] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const totpSecret = (() => {
+    if (!qrData) return '';
+    try {
+      const url = new URL(qrData);
+      return url.searchParams.get('secret') ?? '';
+    } catch {
+      return '';
+    }
+  })();
+
+  const handleCopySecret = async () => {
+    if (!totpSecret) return;
+    try {
+      await navigator.clipboard.writeText(totpSecret);
+      notifySuccess?.('Đã sao chép mã bí mật');
+    } catch {
+      notifyError?.('Không thể sao chép. Vui lòng thử lại.');
+    }
+  };
 
   const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '');
@@ -38,12 +60,14 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
   };
 
   const handleConfirm = async () => {
+    if (isSubmitting) return;
     if (otp.length !== 6) {
       notifyError?.('Vui lòng nhập đầy đủ số OTP');
       return;
     }
 
     try {
+      setIsSubmitting(true);
       setLoading?.(true);
       await otpVerifyApi(otp);
       notifySuccess?.('Xác thực OTP thành công');
@@ -57,6 +81,7 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
         notifyError?.('Mã OTP không chính xác. Vui lòng thử lại.');
       }
     } finally {
+      setIsSubmitting(false);
       setLoading?.(false);
     }
   };
@@ -74,12 +99,13 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
               border: '2px solid #D0D0D0',
               display: 'inline-flex',
               boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
+              maxWidth: '100%',
             }}
           >
             <Box
               sx={{
-                width: 250,
-                height: 250,
+                width: { xs: 200, sm: 250 },
+                height: { xs: 200, sm: 250 },
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
@@ -106,6 +132,38 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
             Quét mã QR này với ứng dụng xác thực (Google Authenticator, Authy...)
           </Typography>
 
+          {totpSecret && (
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{
+                backgroundColor: '#F5F5F5',
+                borderRadius: '8px',
+                px: 1.5,
+                py: 0.5,
+                maxWidth: '100%',
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  fontFamily: 'monospace',
+                  fontSize: '13px',
+                  letterSpacing: '0.05em',
+                  wordBreak: 'break-all',
+                }}
+              >
+                {totpSecret}
+              </Typography>
+              <Tooltip title="Sao chép mã bí mật">
+                <IconButton size="small" onClick={handleCopySecret} aria-label="copy secret">
+                  <ContentCopyIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          )}
+
           <TextField
             label="Mã OTP"
             placeholder="Nhập Số OTP"
@@ -115,6 +173,7 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
             value={otp}
             onChange={handleOtpChange}
             onPaste={handleOtpPaste}
+            autoComplete="one-time-code"
             slotProps={{
               htmlInput: {
                 maxLength: 6,
@@ -150,8 +209,9 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
             variant="contained"
             fullWidth
             size="large"
-            startIcon={<CheckCircle />}
+            startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : <CheckCircle />}
             onClick={handleConfirm}
+            disabled={isSubmitting || otp.length !== 6}
             sx={{
               borderRadius: '24px',
               padding: '12px 24px',
@@ -168,7 +228,7 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
               },
             }}
           >
-            Xác nhận
+            {isSubmitting ? 'Đang xác thực...' : 'Xác nhận'}
           </Button>
         </Stack>
       )}

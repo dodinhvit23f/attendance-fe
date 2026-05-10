@@ -95,7 +95,7 @@ export default function AttendancesPage() {
       });
       if (response.data?.attendances) {
         setAttendances(response.data.attendances);
-        setTotalElements(response.data.totalElements);
+        setTotalElements(response.data.totalElements ?? response.data.attendances.length);
       } else {
         setAttendances([]);
         setTotalElements(0);
@@ -329,7 +329,8 @@ export default function AttendancesPage() {
 
       {/* Attendance Table */}
       <Box sx={{
-        height: 'calc(100vh - 320px)',
+        height: { xs: 'auto', md: 'calc(100vh - 320px)' },
+        minHeight: { xs: 400, md: 'auto' },
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
@@ -359,7 +360,7 @@ export default function AttendancesPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} sx={{ border: 0 }}>
+                  <TableCell colSpan={9} sx={{ border: 0 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
                       <CircularProgress size={40} sx={{ mr: 2 }} />
                       <Typography variant="body1" color="text.secondary">
@@ -370,7 +371,7 @@ export default function AttendancesPage() {
                 </TableRow>
               ) : attendances.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} sx={{ border: 0 }}>
+                  <TableCell colSpan={9} sx={{ border: 0 }}>
                     <Box sx={{ textAlign: 'center', py: 8 }}>
                       <Typography variant="h6" color="text.secondary" gutterBottom>
                         Không có dữ liệu chấm công

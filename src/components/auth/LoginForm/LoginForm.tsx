@@ -1,7 +1,7 @@
 'use client';
 
 import React, {useEffect, useState} from 'react';
-import {Button, IconButton, InputAdornment, Stack, TextField, useTheme} from '@mui/material';
+import {Button, CircularProgress, IconButton, InputAdornment, Stack, TextField, useTheme} from '@mui/material';
 import {Visibility, VisibilityOff} from '@mui/icons-material';
 import {useLoading} from "@/components/root/client-layout";
 import {loginApi} from "@/lib/api/auth";
@@ -20,18 +20,16 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const {setLoading} = useLoading()
   const {notifySuccess, notifyError} = useNotify();
   const router = useRouter()
   const searchParams = useSearchParams();
 
-  const handleGoogleLogin = () => {
-
-  };
-
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     setLoading(true);
 
     const platform = searchParams.get('platform');
@@ -58,7 +56,10 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
       notifyError(ErrorMessage.getMessage(reason.message, 'Tài khoản đăng nhập hoặc mật khẩu không đúng'))
 
     })
-    .finally(() => setLoading(false))
+    .finally(() => {
+      setIsSubmitting(false);
+      setLoading(false);
+    })
   };
 
   const handleTogglePassword = () => {
@@ -80,6 +81,14 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoComplete="username"
+            slotProps={{
+              htmlInput: {
+                inputMode: 'email',
+                autoCapitalize: 'none',
+                autoCorrect: 'off',
+              },
+            }}
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: '12px',
@@ -110,6 +119,7 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            autoComplete="current-password"
             slotProps={{
               input: {
                 endAdornment: (
@@ -154,6 +164,8 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
             variant="contained"
             fullWidth
             size="large"
+            disabled={isSubmitting}
+            startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : null}
             sx={{
               borderRadius: '24px',
               padding: '12px 24px',
@@ -170,7 +182,7 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
               },
             }}
         >
-          Đăng nhập
+          {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </Button>
       </Stack>
   );

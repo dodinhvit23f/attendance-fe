@@ -43,7 +43,7 @@ export default function ManagerLayout({
     (path: string | URL) => {
       const pathString = path.toString();
       if (pathString === '/logout' || pathString === '/manager/logout') {
-        // Redirect to logout page
+        // Redirect to log out page
         router.push('/logout');
       } else {
         router.push(pathString);

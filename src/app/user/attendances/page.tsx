@@ -65,7 +65,10 @@ export default function UserAttendancesPage() {
   const [openQRDialog, setOpenQRDialog] = useState(false);
   const [facilities, setFacilities] = useState<UserFacility[]>([]);
   const [attendances, setAttendances] = useState<UserAttendance[]>([]);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
   const {setLoading} = useLoading();
 
   // Pagination state
@@ -132,36 +135,46 @@ export default function UserAttendancesPage() {
   // Request location permission when dialog opens
   const requestLocationPermission = useCallback(() => {
     if (!navigator.geolocation) {
-      notifyError('Trình duyệt của bạn không hỗ trợ định vị');
+      const msg = 'Trình duyệt của bạn không hỗ trợ định vị';
+      setLocationError(msg);
+      notifyError(msg);
       return;
     }
+
+    setLocationLoading(true);
+    setLocationError(null);
 
     navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
+            accuracy: position.coords.accuracy,
           });
+          setLocationLoading(false);
+          setLocationError(null);
         },
         (error) => {
           console.error('Geolocation error:', error);
+          let msg = 'Đã xảy ra lỗi khi lấy vị trí.';
           switch (error.code) {
             case error.PERMISSION_DENIED:
-              notifyError('Bạn đã từ chối quyền truy cập vị trí. Vui lòng cấp quyền để chấm công.');
+              msg = 'Bạn đã từ chối quyền truy cập vị trí. Vui lòng cấp quyền trong cài đặt trình duyệt.';
               break;
             case error.POSITION_UNAVAILABLE:
-              notifyError('Không thể xác định vị trí của bạn.');
+              msg = 'Không thể xác định vị trí. Hãy ra ngoài trời để có tín hiệu GPS tốt hơn.';
               break;
             case error.TIMEOUT:
-              notifyError('Yêu cầu vị trí đã hết thời gian chờ.');
+              msg = 'Yêu cầu vị trí đã hết thời gian chờ. Vui lòng thử lại.';
               break;
-            default:
-              notifyError('Đã xảy ra lỗi khi lấy vị trí.');
           }
+          setLocationError(msg);
+          setLocationLoading(false);
+          notifyError(msg);
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 20000,
           maximumAge: 0,
         }
     );
@@ -176,6 +189,8 @@ export default function UserAttendancesPage() {
     setOpenDialog(false);
     setUserLocation(null);
     setShowQRScanner(false);
+    setLocationError(null);
+    setLocationLoading(false);
   };
 
   const handleShowQRScanner = () => {
@@ -337,11 +352,13 @@ export default function UserAttendancesPage() {
   };
 
   const handleQRScan = async (scannedData: string) => {
-    // Parse QR data as JSON (facility object)
+
+    if (isCheckingIn) return;
+
+
     let scannedFacility: UserFacility | null = null;
     try {
       const parsed = JSON.parse(scannedData);
-      // Validate required fields exist and have correct types
       if (
         typeof parsed?.id !== 'number' ||
         typeof parsed?.name !== 'string' ||
@@ -350,6 +367,7 @@ export default function UserAttendancesPage() {
       ) {
         throw new Error('Invalid facility data');
       }
+
       scannedFacility = parsed as UserFacility;
     } catch {
       notifyError('Mã QR không hợp lệ. Vui lòng thử lại.');
@@ -357,7 +375,6 @@ export default function UserAttendancesPage() {
       return;
     }
 
-    // Find matching facility from the list
     const matchedFacility = facilities.find(
         (facility) => facility.id === scannedFacility?.id
     );
@@ -374,7 +391,14 @@ export default function UserAttendancesPage() {
       return;
     }
 
-    // Check if user is within range of the matched facility
+    if (userLocation.accuracy > Math.max(150, matchedFacility.allowDistance / 2)) {
+      notifyError(
+          `Tín hiệu GPS yếu (sai số ${Math.round(userLocation.accuracy)}m). Vui lòng ra ngoài trời và thử lại.`
+      );
+      setShowQRScanner(false);
+      return;
+    }
+
     const distance = calculateDistance(
         userLocation.lat,
         userLocation.lng,
@@ -390,8 +414,8 @@ export default function UserAttendancesPage() {
       return;
     }
 
-    // Call API to record attendance
     try {
+      setIsCheckingIn(true);
       setLoading(true);
       await recordUserAttendance({
         latitude: userLocation.lat,
@@ -400,11 +424,13 @@ export default function UserAttendancesPage() {
       });
       notifySuccess('Chấm công thành công!');
       handleCloseDialog();
+      fetchAttendances();
     } catch (error) {
       console.error('Failed to record attendance:', error);
       notifyError('Không thể ghi nhận chấm công. Vui lòng thử lại.');
       setShowQRScanner(false);
     } finally {
+      setIsCheckingIn(false);
       setLoading(false);
     }
   };
@@ -596,12 +622,44 @@ export default function UserAttendancesPage() {
                 <QRScannerInline onScan={handleQRScan}/>
             ) : !userLocation ? (
                 <Box sx={{textAlign: 'center', py: 4}}>
-                  <Typography color="text.secondary">
-                    Đang chờ quyền truy cập vị trí...
-                  </Typography>
+                  {locationLoading && (
+                      <>
+                        <CircularProgress size={40} sx={{mb: 2}}/>
+                        <Typography color="text.secondary">
+                          Đang xác định vị trí...
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1}}>
+                          Có thể mất 10–20 giây ở ngoài trời
+                        </Typography>
+                      </>
+                  )}
+                  {!locationLoading && locationError && (
+                      <>
+                        <Typography color="error" sx={{mb: 2}}>
+                          {locationError}
+                        </Typography>
+                        <Button variant="outlined" onClick={requestLocationPermission}>
+                          Thử lại
+                        </Button>
+                      </>
+                  )}
                 </Box>
             ) : (
                 <Stack spacing={2} sx={{mt: 1}}>
+                  {/* Accuracy indicator */}
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      borderRadius: '8px',
+                      backgroundColor: userLocation.accuracy > 50 ? '#fff3e0' : '#e8f5e9',
+                      border: `1px solid ${userLocation.accuracy > 50 ? '#ffb74d' : '#81c784'}`,
+                    }}
+                  >
+                    <Typography variant="body2">
+                      Độ chính xác GPS: <strong>±{Math.round(userLocation.accuracy)}m</strong>
+                      {userLocation.accuracy > 50 && ' — tín hiệu yếu, hãy ra ngoài trời'}
+                    </Typography>
+                  </Box>
                   {/* Facility List with Distance */}
                   <Box>
                     <Typography variant="subtitle2" sx={{mb: 1, fontWeight: 600}}>
@@ -682,13 +740,13 @@ export default function UserAttendancesPage() {
           </DialogContent>
           <DialogActions>
             {showQRScanner ? (
-                <Button onClick={handleBackFromScanner}>Quay lại</Button>
+                <Button onClick={handleBackFromScanner} disabled={isCheckingIn}>Quay lại</Button>
             ) : (
                 <>
-                  <Button onClick={handleCloseDialog}>Đóng</Button>
+                  <Button onClick={handleCloseDialog} disabled={isCheckingIn}>Đóng</Button>
                   <Button
                       variant="contained"
-                      disabled={!userLocation || !facilityInRange}
+                      disabled={!userLocation || !facilityInRange || isCheckingIn}
                       onClick={handleShowQRScanner}
                   >
                     Xác nhận chấm công
