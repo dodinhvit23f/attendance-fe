@@ -19,6 +19,7 @@ export class ErrorMessage {
   public static readonly ACCESS_TOKEN_IS_EMPTY = 'ERROR_AUTH_013';
   public static readonly OTP_CODE_IS_EMPTY = 'ERROR_AUTH_014';
   public static readonly OTP_NOT_CORRECT = 'ERROR_AUTH_015';
+  public static readonly OTP_RATE_LIMIT_EXCEEDED = "ERROR_AUTH_027";
   public static readonly ROLE_NOT_EXIST = 'ERROR_AUTH_016';
   public static readonly PASSWORD_NOT_CORRECT = 'ERROR_AUTH_017';
   public static readonly OTP_TOKEN_IS_EMPTY = 'ERROR_AUTH_018';
@@ -124,6 +125,7 @@ export class ErrorMessage {
     ERROR_AUTH_024: 'Mật khẩu là bắt buộc',
     ERROR_AUTH_025: 'Mật khẩu phải có ít nhất 6 ký tự',
     ERROR_AUTH_026: 'Không tìm thấy tenant',
+    ERROR_AUTH_027: 'Quá nhiều lần thử. Vui lòng thử lại sau.',
 
     // Facility Errors
     ERROR_FACILITY_001: 'Không tìm thấy cơ sở',

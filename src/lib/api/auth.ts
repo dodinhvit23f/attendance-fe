@@ -118,6 +118,22 @@ interface OtpVerifyResponse {
   data: boolean;
 }
 
+export const forgotPasswordApi = async (
+  username: string,
+  password: string,
+  otp: string
+): Promise<void> => {
+  const response = await fetch(process.env.NEXT_PUBLIC_API_FORGOT_PASSWORD!, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, otp }),
+  });
+
+  if (!response.ok) {
+    throw (await response.json()) as ApiErrorResponse;
+  }
+};
+
 export const loginApi = async (
   email: string,
   password: string,
