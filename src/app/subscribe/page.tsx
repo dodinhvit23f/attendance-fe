@@ -69,7 +69,7 @@ export default function SubscribePage() {
     {
       id: 'pro',
       label: 'Pro',
-      price: '$19',
+      price: '$2',
       priceNote: '/tháng',
       description: 'Dành cho doanh nghiệp đang phát triển',
       features: [
@@ -86,7 +86,7 @@ export default function SubscribePage() {
     {
       id: 'premium',
       label: 'Premium',
-      price: '$49',
+      price: '$5',
       priceNote: '/tháng',
       description: 'Giải pháp toàn diện cho doanh nghiệp lớn',
       features: [
