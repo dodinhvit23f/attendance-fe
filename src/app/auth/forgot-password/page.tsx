@@ -30,6 +30,9 @@ import { useRouter } from 'next/navigation';
 import { LoginCard } from '@/components/auth';
 import { useNotify } from '@/components/notification/NotificationProvider';
 import { forgotPasswordApi } from '@/lib/api/auth';
+import { ApiErrorResponse } from '@/lib/api/types';
+import { ErrorMessage } from '@/lib/constants/errorMessages';
+import {useLoading} from "@/components/root/client-layout";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -43,25 +46,34 @@ interface OtpDialogProps {
   open: boolean;
   onClose: () => void;
   onConfirm: (otp: string) => Promise<void>;
+  failedAttempts: number;
+  setFailedAttempts: (n: number) => void;
+  blockedUntil: number | null;
+  setBlockedUntil: (n: number | null) => void;
 }
 
-const OtpDialog: React.FC<OtpDialogProps> = ({ open, onClose, onConfirm }) => {
+const OtpDialog: React.FC<OtpDialogProps> = ({
+  open,
+  onClose,
+  onConfirm,
+  failedAttempts,
+  setFailedAttempts,
+  blockedUntil,
+  setBlockedUntil,
+}) => {
   const theme = useTheme();
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''));
   const [error, setError] = useState('');
   const [confirmLoading, setConfirmLoading] = useState(false);
-  const [failedAttempts, setFailedAttempts] = useState(0);
-  const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const { setLoading: setGlobalLoading } = useLoading();
 
   useEffect(() => {
     if (open) {
       setDigits(Array(CODE_LENGTH).fill(''));
       setError('');
       setConfirmLoading(false);
-      setFailedAttempts(0);
-      setBlockedUntil(null);
       setTimeout(() => inputRefs.current[0]?.focus(), 150);
     }
   }, [open]);
@@ -81,7 +93,7 @@ const OtpDialog: React.FC<OtpDialogProps> = ({ open, onClose, onConfirm }) => {
     return () => clearInterval(id);
   }, [blockedUntil]);
 
-  const isBlocked = blockedUntil !== null && timeLeft > 0;
+  const isBlocked = blockedUntil !== null && blockedUntil > Date.now();
 
   const formatCountdown = (ms: number) => {
     const m = Math.floor(ms / 60000);
@@ -138,8 +150,8 @@ const OtpDialog: React.FC<OtpDialogProps> = ({ open, onClose, onConfirm }) => {
     try {
       await onConfirm(fullCode);
     } catch (err) {
-      const errorCode = err instanceof Error ? err.message : '';
-      if (errorCode === 'OTP_NOT_CORRECT') {
+      const errorCode = (err as ApiErrorResponse)?.errorCodes?.[0] ?? '';
+      if (errorCode === ErrorMessage.OTP_NOT_CORRECT) {
         const next = failedAttempts + 1;
         setFailedAttempts(next);
         if (next >= MAX_ATTEMPTS) {
@@ -147,10 +159,12 @@ const OtpDialog: React.FC<OtpDialogProps> = ({ open, onClose, onConfirm }) => {
         } else {
           setError(`Mã OTP không chính xác. Còn ${MAX_ATTEMPTS - next} lần thử.`);
         }
-      } else if (errorCode === 'USER_NOT_EXIST') {
+      } else if (errorCode === ErrorMessage.OTP_RATE_LIMIT_EXCEEDED) {
+        setBlockedUntil(Date.now() + BLOCK_DURATION_MS);
+      } else if (errorCode === ErrorMessage.USER_NOT_EXIST) {
         setError('Tài khoản không tồn tại hoặc chưa được kích hoạt.');
       } else {
-        setError('Đã có lỗi xảy ra. Vui lòng thử lại.');
+        setError(ErrorMessage.getMessage(errorCode));
       }
     } finally {
       setConfirmLoading(false);
@@ -162,6 +176,10 @@ const OtpDialog: React.FC<OtpDialogProps> = ({ open, onClose, onConfirm }) => {
   };
 
   const isComplete = digits.every(d => d !== '');
+
+  useEffect(() => {
+    setGlobalLoading(false)
+  }, []);
 
   return (
     <Dialog
@@ -363,6 +381,22 @@ export default function ForgotPasswordPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [formError, setFormError] = useState('');
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+  const [otpFailedAttempts, setOtpFailedAttempts] = useState(0);
+  const [otpBlockedUntil, setOtpBlockedUntil] = useState<number | null>(null);
+  const usernameRef = useRef(username);
+  useEffect(() => { usernameRef.current = username; }, [username]);
+
+  useEffect(() => {
+    const u = usernameRef.current;
+    if (!u) return;
+    const key = `otp_rl_${u}`;
+    if (otpFailedAttempts === 0 && otpBlockedUntil === null) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, JSON.stringify({ failedAttempts: otpFailedAttempts, blockedUntil: otpBlockedUntil }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otpFailedAttempts, otpBlockedUntil]);
 
   const strength = getPasswordStrength(newPassword);
   const passwordsMatch = confirmPassword.length > 0 && newPassword === confirmPassword;
@@ -380,6 +414,21 @@ export default function ForgotPasswordPage() {
     if (newPassword !== confirmPassword) {
       setFormError('Mật khẩu xác nhận không khớp');
       return;
+    }
+    try {
+      const stored = localStorage.getItem(`otp_rl_${username}`);
+      if (stored) {
+        const { failedAttempts: fa, blockedUntil: bu } = JSON.parse(stored);
+        const validBu = bu && bu > Date.now() ? bu : null;
+        setOtpFailedAttempts(validBu ? (fa ?? 0) : 0);
+        setOtpBlockedUntil(validBu);
+      } else {
+        setOtpFailedAttempts(0);
+        setOtpBlockedUntil(null);
+      }
+    } catch {
+      setOtpFailedAttempts(0);
+      setOtpBlockedUntil(null);
     }
     setOtpDialogOpen(true);
   };
@@ -621,6 +670,10 @@ export default function ForgotPasswordPage() {
         open={otpDialogOpen}
         onClose={() => setOtpDialogOpen(false)}
         onConfirm={handleOtpConfirm}
+        failedAttempts={otpFailedAttempts}
+        setFailedAttempts={setOtpFailedAttempts}
+        blockedUntil={otpBlockedUntil}
+        setBlockedUntil={setOtpBlockedUntil}
       />
     </Container>
   );

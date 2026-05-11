@@ -130,8 +130,7 @@ export const forgotPasswordApi = async (
   });
 
   if (!response.ok) {
-    const error: ApiErrorResponse = await response.json();
-    throw new Error(getErrorCode(error));
+    throw (await response.json()) as ApiErrorResponse;
   }
 };
 
