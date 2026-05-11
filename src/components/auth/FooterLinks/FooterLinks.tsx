@@ -10,7 +10,7 @@ export const FooterLinks: React.FC = () => {
       {/* Subtle links row */}
       <Stack direction="row" spacing={1} alignItems="center">
         <Link
-          href="#"
+          href="/auth/forgot-password"
           underline="none"
           sx={{
             color: theme.palette.text.secondary,

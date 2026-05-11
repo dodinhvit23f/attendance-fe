@@ -19,7 +19,7 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-const PUBLIC_PATHS = ['/', '/auth', '/subscribe', '/signup'];
+const PUBLIC_PATHS = ['/', '/auth', '/subscribe', '/signup', "/auth/forgot-password"];
 
 const getUserRoles = (): string[] => {
   const rolesStr = localStorage.getItem(STORAGE_KEYS.ROLES);
