@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, KeyboardEvent, ChangeEvent } from 'react';
+import React, { ChangeEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
 import {
   Box,
   Button,
@@ -24,9 +24,18 @@ import {
   Security,
   Visibility,
   VisibilityOff,
+  Warning,
 } from '@mui/icons-material';
+import { useRouter } from 'next/navigation';
 import { LoginCard } from '@/components/auth';
-import {useLoading} from "@/components/root/client-layout";
+import { useNotify } from '@/components/notification/NotificationProvider';
+import { forgotPasswordApi } from '@/lib/api/auth';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const CODE_LENGTH = 6;
+const MAX_ATTEMPTS = 5;
+const BLOCK_DURATION_MS = 5 * 60 * 1000;
 
 // ─── OTP Dialog ───────────────────────────────────────────────────────────────
 
@@ -34,47 +43,74 @@ interface OtpDialogProps {
   open: boolean;
   onClose: () => void;
   onConfirm: (otp: string) => Promise<void>;
-  loading: boolean;
 }
 
-const OtpDialog: React.FC<OtpDialogProps> = ({ open, onClose, onConfirm, loading }) => {
+const OtpDialog: React.FC<OtpDialogProps> = ({ open, onClose, onConfirm }) => {
   const theme = useTheme();
-  const CODE_LENGTH = 6;
-  const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(''));
+  const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''));
   const [error, setError] = useState('');
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
+  const [timeLeft, setTimeLeft] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const { setLoading } = useLoading();
 
   useEffect(() => {
     if (open) {
-      setCode(Array(CODE_LENGTH).fill(''));
+      setDigits(Array(CODE_LENGTH).fill(''));
       setError('');
+      setConfirmLoading(false);
+      setFailedAttempts(0);
+      setBlockedUntil(null);
       setTimeout(() => inputRefs.current[0]?.focus(), 150);
     }
   }, [open]);
 
+  useEffect(() => {
+    if (!blockedUntil) return;
+    const tick = () => {
+      const left = Math.max(0, blockedUntil - Date.now());
+      setTimeLeft(left);
+      if (left === 0) {
+        setBlockedUntil(null);
+        setFailedAttempts(0);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [blockedUntil]);
+
+  const isBlocked = blockedUntil !== null && timeLeft > 0;
+
+  const formatCountdown = (ms: number) => {
+    const m = Math.floor(ms / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   const handleChange = (index: number, value: string) => {
     if (value.length > 1) {
-      const digits = value.replace(/\D/g, '').slice(0, CODE_LENGTH);
-      if (digits.length > 0) {
-        const newCode = Array(CODE_LENGTH).fill('');
-        digits.split('').forEach((char, idx) => { newCode[idx] = char; });
-        setCode(newCode);
+      const nums = value.replace(/\D/g, '').slice(0, CODE_LENGTH);
+      if (nums.length > 0) {
+        const next = Array(CODE_LENGTH).fill('');
+        nums.split('').forEach((c, i) => { next[i] = c; });
+        setDigits(next);
         setError('');
-        inputRefs.current[Math.min(digits.length, CODE_LENGTH - 1)]?.focus();
+        inputRefs.current[Math.min(nums.length, CODE_LENGTH - 1)]?.focus();
       }
       return;
     }
     if (value && !/^\d$/.test(value)) return;
-    const newCode = [...code];
-    newCode[index] = value;
-    setCode(newCode);
+    const next = [...digits];
+    next[index] = value;
+    setDigits(next);
     setError('');
     if (value && index < CODE_LENGTH - 1) inputRefs.current[index + 1]?.focus();
   };
 
   const handleKeyDown = (index: number, e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Backspace' && !code[index] && index > 0) inputRefs.current[index - 1]?.focus();
+    if (e.key === 'Backspace' && !digits[index] && index > 0) inputRefs.current[index - 1]?.focus();
     if (e.key === 'ArrowLeft' && index > 0) inputRefs.current[index - 1]?.focus();
     if (e.key === 'ArrowRight' && index < CODE_LENGTH - 1) inputRefs.current[index + 1]?.focus();
   };
@@ -83,32 +119,49 @@ const OtpDialog: React.FC<OtpDialogProps> = ({ open, onClose, onConfirm, loading
     e.preventDefault();
     const pasted = e.clipboardData.getData('text').slice(0, CODE_LENGTH);
     if (!/^\d+$/.test(pasted)) return;
-    const newCode = Array(CODE_LENGTH).fill('');
-    pasted.split('').forEach((char, idx) => { newCode[idx] = char; });
-    setCode(newCode);
+    const next = Array(CODE_LENGTH).fill('');
+    pasted.split('').forEach((c, i) => { next[i] = c; });
+    setDigits(next);
     setError('');
     inputRefs.current[Math.min(pasted.length, CODE_LENGTH - 1)]?.focus();
   };
 
   const handleConfirm = async () => {
-    const fullCode = code.join('');
+    if (isBlocked) return;
+    const fullCode = digits.join('');
     if (fullCode.length !== CODE_LENGTH) {
       setError(`Vui lòng nhập đầy đủ ${CODE_LENGTH} chữ số`);
       return;
     }
     setError('');
-    await onConfirm(fullCode);
+    setConfirmLoading(true);
+    try {
+      await onConfirm(fullCode);
+    } catch (err) {
+      const errorCode = err instanceof Error ? err.message : '';
+      if (errorCode === 'OTP_NOT_CORRECT') {
+        const next = failedAttempts + 1;
+        setFailedAttempts(next);
+        if (next >= MAX_ATTEMPTS) {
+          setBlockedUntil(Date.now() + BLOCK_DURATION_MS);
+        } else {
+          setError(`Mã OTP không chính xác. Còn ${MAX_ATTEMPTS - next} lần thử.`);
+        }
+      } else if (errorCode === 'USER_NOT_EXIST') {
+        setError('Tài khoản không tồn tại hoặc chưa được kích hoạt.');
+      } else {
+        setError('Đã có lỗi xảy ra. Vui lòng thử lại.');
+      }
+    } finally {
+      setConfirmLoading(false);
+    }
   };
 
   const handleClose = () => {
-    if (!loading) onClose();
+    if (!confirmLoading) onClose();
   };
 
-  const isComplete = code.every(d => d !== '');
-
-    useEffect(() => {
-        setLoading(false);
-    }, []);
+  const isComplete = digits.every(d => d !== '');
 
   return (
     <Dialog
@@ -127,11 +180,10 @@ const OtpDialog: React.FC<OtpDialogProps> = ({ open, onClose, onConfirm, loading
       }}
     >
       <DialogContent sx={{ p: { xs: 3, sm: 4 } }}>
-        {/* Close button */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
           <IconButton
             onClick={handleClose}
-            disabled={loading}
+            disabled={confirmLoading}
             size="small"
             sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
           >
@@ -140,7 +192,6 @@ const OtpDialog: React.FC<OtpDialogProps> = ({ open, onClose, onConfirm, loading
         </Box>
 
         <Stack spacing={3} alignItems="center">
-          {/* Security icon */}
           <Box
             sx={{
               width: 68,
@@ -155,7 +206,6 @@ const OtpDialog: React.FC<OtpDialogProps> = ({ open, onClose, onConfirm, loading
             <Security sx={{ fontSize: 34, color: theme.palette.primary.main }} />
           </Box>
 
-          {/* Heading */}
           <Stack spacing={0.5} alignItems="center">
             <Typography variant="h6" fontWeight={700} color="text.primary" textAlign="center">
               Xác Thực OTP
@@ -165,9 +215,36 @@ const OtpDialog: React.FC<OtpDialogProps> = ({ open, onClose, onConfirm, loading
             </Typography>
           </Stack>
 
+          {/* Rate-limit countdown banner */}
+          {isBlocked && (
+            <Box
+              sx={{
+                width: '100%',
+                p: 2,
+                borderRadius: '12px',
+                backgroundColor: '#fff3e0',
+                border: '1px solid #ffe0b2',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+              }}
+            >
+              <Warning sx={{ color: '#f57c00', fontSize: 20, flexShrink: 0 }} />
+              <Box>
+                <Typography variant="body2" fontWeight={600} color="#e65100">
+                  Quá nhiều lần thử sai
+                </Typography>
+                <Typography variant="caption" color="#f57c00">
+                  Vui lòng thử lại sau:{' '}
+                  <Box component="strong">{formatCountdown(timeLeft)}</Box>
+                </Typography>
+              </Box>
+            </Box>
+          )}
+
           {/* Digit inputs */}
           <Stack direction="row" spacing={1.5} justifyContent="center">
-            {code.map((digit, index) => (
+            {digits.map((digit, index) => (
               <TextField
                 key={index}
                 inputRef={el => (inputRefs.current[index] = el)}
@@ -175,7 +252,7 @@ const OtpDialog: React.FC<OtpDialogProps> = ({ open, onClose, onConfirm, loading
                 onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange(index, e.target.value)}
                 onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => handleKeyDown(index, e)}
                 onPaste={handlePaste}
-                disabled={loading}
+                disabled={confirmLoading || isBlocked}
                 inputProps={{
                   maxLength: 1,
                   inputMode: 'numeric',
@@ -208,35 +285,35 @@ const OtpDialog: React.FC<OtpDialogProps> = ({ open, onClose, onConfirm, loading
                         borderColor: theme.palette.primary.main,
                       },
                     },
-                    '&.Mui-disabled': {
-                      opacity: 0.6,
-                    },
+                    '&.Mui-disabled': { opacity: 0.5 },
                   },
                 }}
               />
             ))}
           </Stack>
 
-          {/* Error */}
-          {error && (
+          {/* Error message */}
+          {error && !isBlocked && (
             <Typography variant="body2" color="error" textAlign="center" fontWeight={500}>
               {error}
             </Typography>
           )}
 
-          {/* Confirm button */}
+          {/* Attempts remaining hint */}
+          {!isBlocked && failedAttempts > 0 && failedAttempts < MAX_ATTEMPTS && !error && (
+            <Typography variant="caption" color="text.secondary" textAlign="center">
+              Còn {MAX_ATTEMPTS - failedAttempts} lần thử
+            </Typography>
+          )}
+
           <Button
             variant="contained"
             fullWidth
             size="large"
             onClick={handleConfirm}
-            disabled={!isComplete || loading}
+            disabled={!isComplete || confirmLoading || isBlocked}
             startIcon={
-              loading ? (
-                <CircularProgress size={18} color="inherit" />
-              ) : (
-                <CheckCircle />
-              )
+              confirmLoading ? <CircularProgress size={18} color="inherit" /> : <CheckCircle />
             }
             sx={{
               borderRadius: '24px',
@@ -251,13 +328,10 @@ const OtpDialog: React.FC<OtpDialogProps> = ({ open, onClose, onConfirm, loading
                 backgroundColor: theme.palette.primary.dark,
                 boxShadow: '0px 6px 16px rgba(109, 76, 65, 0.3)',
               },
-              '&:disabled': {
-                backgroundColor: '#D0D0D0',
-                color: '#FFFFFF',
-              },
+              '&:disabled': { backgroundColor: '#D0D0D0', color: '#FFFFFF' },
             }}
           >
-            {loading ? 'Đang xác thực...' : 'Xác Nhận'}
+            {confirmLoading ? 'Đang xác thực...' : 'Xác Nhận'}
           </Button>
         </Stack>
       </DialogContent>
@@ -279,6 +353,9 @@ const getPasswordStrength = (pw: string) => {
 
 export default function ForgotPasswordPage() {
   const theme = useTheme();
+  const router = useRouter();
+  const { notifySuccess } = useNotify();
+
   const [username, setUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -286,21 +363,16 @@ export default function ForgotPasswordPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [formError, setFormError] = useState('');
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
 
   const strength = getPasswordStrength(newPassword);
   const passwordsMatch = confirmPassword.length > 0 && newPassword === confirmPassword;
   const passwordsMismatch = confirmPassword.length > 0 && newPassword !== confirmPassword;
 
-  const textFieldBase = {
-    borderRadius: '12px',
-    backgroundColor: '#FFFFFF',
-  };
+  const textFieldBase = { borderRadius: '12px', backgroundColor: '#FFFFFF' };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
-
     if (newPassword.length < 8) {
       setFormError('Mật khẩu phải có ít nhất 8 ký tự');
       return;
@@ -309,13 +381,14 @@ export default function ForgotPasswordPage() {
       setFormError('Mật khẩu xác nhận không khớp');
       return;
     }
-
-    setOtpDialogOpen(true); // TODO: call API once endpoint is defined
+    setOtpDialogOpen(true);
   };
 
-  // TODO: wire up API once the endpoint is defined
-  const handleOtpConfirm = async (_otp: string) => {
-    void _otp;
+  const handleOtpConfirm = async (otp: string) => {
+    await forgotPasswordApi(username, newPassword, otp);
+    notifySuccess('Đặt lại mật khẩu thành công!');
+    setOtpDialogOpen(false);
+    router.push('/');
   };
 
   return (
@@ -331,14 +404,7 @@ export default function ForgotPasswordPage() {
         position: 'relative',
       }}
     >
-      <Box
-        sx={{
-          width: '100%',
-          maxWidth: '400px',
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
+      <Box sx={{ width: '100%', maxWidth: '400px', position: 'relative', zIndex: 1 }}>
         <LoginCard>
           {/* Header */}
           <Stack spacing={1.5} alignItems="center">
@@ -355,12 +421,7 @@ export default function ForgotPasswordPage() {
             >
               <LockReset sx={{ fontSize: 38, color: theme.palette.primary.main }} />
             </Box>
-            <Typography
-              variant="h4"
-              fontWeight={600}
-              color="text.primary"
-              textAlign="center"
-            >
+            <Typography variant="h4" fontWeight={600} color="text.primary" textAlign="center">
               Đặt Lại Mật Khẩu
             </Typography>
             <Typography variant="body2" color="text.secondary" textAlign="center">
@@ -370,7 +431,6 @@ export default function ForgotPasswordPage() {
 
           {/* Form */}
           <Stack component="form" onSubmit={handleSubmit} spacing={2.5}>
-            {/* Username */}
             <TextField
               label="Tài khoản"
               placeholder="Email hoặc tên tài khoản"
@@ -423,7 +483,6 @@ export default function ForgotPasswordPage() {
                   '& .MuiOutlinedInput-input': { padding: '12px 16px', fontSize: '14px' },
                 }}
               />
-              {/* Strength indicator */}
               {newPassword && (
                 <Box sx={{ mt: 1, px: 0.5 }}>
                   <Box
@@ -445,10 +504,7 @@ export default function ForgotPasswordPage() {
                       }}
                     />
                   </Box>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: strength.color, fontWeight: 600 }}
-                  >
+                  <Typography variant="caption" sx={{ color: strength.color, fontWeight: 600 }}>
                     {strength.label}
                   </Typography>
                 </Box>
@@ -485,8 +541,7 @@ export default function ForgotPasswordPage() {
                 },
                 formHelperText: {
                   sx: {
-                    color:
-                      passwordsMatch && !passwordsMismatch ? '#4caf50' : undefined,
+                    color: passwordsMatch && !passwordsMismatch ? '#4caf50' : undefined,
                     fontWeight: 500,
                   },
                 },
@@ -509,19 +564,12 @@ export default function ForgotPasswordPage() {
               }}
             />
 
-            {/* Form-level error */}
             {formError && (
-              <Typography
-                variant="body2"
-                color="error"
-                textAlign="center"
-                fontWeight={500}
-              >
+              <Typography variant="body2" color="error" textAlign="center" fontWeight={500}>
                 {formError}
               </Typography>
             )}
 
-            {/* Submit */}
             <Button
               type="submit"
               variant="contained"
@@ -569,12 +617,10 @@ export default function ForgotPasswordPage() {
         </LoginCard>
       </Box>
 
-      {/* OTP Verification Dialog */}
       <OtpDialog
         open={otpDialogOpen}
         onClose={() => setOtpDialogOpen(false)}
         onConfirm={handleOtpConfirm}
-        loading={otpLoading}
       />
     </Container>
   );
