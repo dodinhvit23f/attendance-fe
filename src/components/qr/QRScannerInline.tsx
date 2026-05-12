@@ -8,8 +8,10 @@ import {
   Button,
   Stack,
   Divider,
+  Alert,
 } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import {Html5Qrcode} from 'html5-qrcode';
 import {useNotify} from '@/components/notification/NotificationProvider';
 
@@ -22,13 +24,44 @@ interface QRScannerInlineProps {
   onError?: (error: string) => void;
 }
 
+// Detect in-app browsers / WebViews where getUserMedia is typically unavailable.
+const detectInAppBrowser = (): boolean => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+
+  // Known in-app browser signatures (Facebook, Instagram, Zalo, Line, WeChat, TikTok, ...).
+  const inAppPatterns = [
+    'FBAN', 'FBAV', 'FB_IAB',
+    'Instagram',
+    'Line/',
+    'MicroMessenger',
+    'Zalo',
+    'TikTok', 'musical_ly', 'BytedanceWebview',
+    'Twitter',
+    'KAKAOTALK',
+    'Snapchat',
+    '; wv)', // Android WebView marker
+  ];
+  if (inAppPatterns.some((p) => ua.includes(p))) return true;
+
+  // iOS app webviews: iOS UA without a real browser identifier.
+  const isIOS = /iPhone|iPad|iPod/.test(ua);
+  const isRealIOSBrowser = /Safari\//.test(ua) || /CriOS\//.test(ua) || /FxiOS\//.test(ua) || /EdgiOS\//.test(ua);
+  if (isIOS && !isRealIOSBrowser) return true;
+
+  // Final feature check — if camera API is missing, treat as in-app browser.
+  return !navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function';
+};
+
 export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
                                                                   onScan,
                                                                   onError,
                                                                 }) => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const captureInputRef = useRef<HTMLInputElement>(null);
   const isMountedRef = useRef(true);
+  const [isInAppBrowser, setIsInAppBrowser] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isScannerReady, setIsScannerReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,10 +145,11 @@ export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleCaptureClick = () => {
+    captureInputRef.current?.click();
+  };
 
+  const scanFileAsQR = async (file: File) => {
     try {
       const html5QrCode = new Html5Qrcode('qr-reader-upload');
       const decodedText = await html5QrCode.scanFile(file, true);
@@ -125,15 +159,40 @@ export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
       notifyError('Không thể đọc mã QR từ hình ảnh. Vui lòng thử lại.');
       onError?.('Không thể đọc mã QR từ hình ảnh.');
     }
+  };
 
-    // Reset file input
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await scanFileAsQR(file);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
+  const handleCaptureChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await scanFileAsQR(file);
+    if (captureInputRef.current) {
+      captureInputRef.current.value = '';
+    }
+  };
+
   useEffect(() => {
     isMountedRef.current = true;
+    const inApp = detectInAppBrowser();
+    setIsInAppBrowser(inApp);
+
+    if (inApp) {
+      // Skip live camera entirely — rely on native capture / upload.
+      setIsLoading(false);
+      return () => {
+        isMountedRef.current = false;
+        stopScanner();
+      };
+    }
+
     const timer = setTimeout(() => {
       startScanner();
     }, 100);
@@ -147,93 +206,137 @@ export const QRScannerInline: React.FC<QRScannerInlineProps> = ({
 
   return (
       <Box sx={{position: 'relative', width: '100%', minHeight: 350}}>
-        {isLoading && (
-            <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minHeight: 350,
-                }}
+        {isInAppBrowser ? (
+            <Stack
+                alignItems="center"
+                spacing={2}
+                sx={{minHeight: 280, justifyContent: 'center', px: 2}}
             >
-              <CircularProgress size={60}/>
-              <Typography sx={{mt: 2}} color="text.secondary">
-                Đang mở camera...
-              </Typography>
-            </Box>
-        )}
-
-        {error && !isLoading && (
-            <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minHeight: 350,
-                }}
-            >
-              <Typography color="error" sx={{textAlign: 'center'}}>
-                {error}
-              </Typography>
+              <Alert severity="info" sx={{width: '100%'}}>
+                Trình duyệt trong ứng dụng không hỗ trợ camera trực tiếp. Vui lòng chụp ảnh mã QR hoặc tải ảnh lên.
+              </Alert>
               <Button
-                  variant="outlined"
-                  onClick={startScanner}
-                  sx={{mt: 2}}
+                  variant="contained"
+                  startIcon={<PhotoCameraIcon/>}
+                  onClick={handleCaptureClick}
+                  size="large"
+                  sx={{borderRadius: '8px', minWidth: 220}}
               >
-                Thử lại
+                Chụp ảnh mã QR
               </Button>
-            </Box>
+              <Typography variant="caption" color="text.secondary" sx={{textAlign: 'center'}}>
+                Để có trải nghiệm tốt nhất, hãy mở trang này trong Chrome hoặc Safari.
+              </Typography>
+            </Stack>
+        ) : (
+            <>
+              {isLoading && (
+                  <Box
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: 350,
+                      }}
+                  >
+                    <CircularProgress size={60}/>
+                    <Typography sx={{mt: 2}} color="text.secondary">
+                      Đang mở camera...
+                    </Typography>
+                  </Box>
+              )}
+
+              {error && !isLoading && (
+                  <Stack
+                      alignItems="center"
+                      spacing={2}
+                      sx={{minHeight: 350, justifyContent: 'center', px: 2}}
+                  >
+                    <Typography color="error" sx={{textAlign: 'center'}}>
+                      {error}
+                    </Typography>
+                    <Stack direction="row" spacing={2}>
+                      <Button variant="outlined" onClick={startScanner}>
+                        Thử lại
+                      </Button>
+                      <Button
+                          variant="contained"
+                          startIcon={<PhotoCameraIcon/>}
+                          onClick={handleCaptureClick}
+                      >
+                        Chụp ảnh
+                      </Button>
+                    </Stack>
+                  </Stack>
+              )}
+
+              <Box
+                  id="qr-reader-inline"
+                  sx={{
+                    width: '100%',
+                    display: isLoading || error ? 'none' : 'block',
+                    '& video': {
+                      borderRadius: '8px',
+                      width: '100% !important',
+                    },
+                  }}
+              />
+
+              {isScannerReady && (
+                  <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{mt: 2, textAlign: 'center'}}
+                  >
+                    Đưa mã QR vào trong khung để quét
+                  </Typography>
+              )}
+            </>
         )}
 
-        <Box
-            id="qr-reader-inline"
-            sx={{
-              width: '100%',
-              display: isLoading || error ? 'none' : 'block',
-              '& video': {
-                borderRadius: '8px',
-                width: '100% !important',
-              },
-              '& #qr-shaded-region': {},
-            }}
-        />
-
-        {isScannerReady && (
-            <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{mt: 2, textAlign: 'center'}}
-            >
-              Đưa mã QR vào trong khung để quét
-            </Typography>
-        )}
-
-        {/* Divider */}
         <Divider sx={{my: 2}}>hoặc</Divider>
 
-        {/* Upload Image Button */}
-        <Stack alignItems="center">
-          <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept="image/*"
-              style={{display: 'none'}}
-          />
+        <Stack alignItems="center" spacing={1}>
+          {!isInAppBrowser && (
+              <Button
+                  variant="outlined"
+                  startIcon={<PhotoCameraIcon/>}
+                  onClick={handleCaptureClick}
+                  sx={{borderRadius: '8px', minWidth: 200}}
+              >
+                Chụp ảnh mã QR
+              </Button>
+          )}
           <Button
               variant="outlined"
               startIcon={<UploadFileIcon/>}
               onClick={handleUploadClick}
-              sx={{borderRadius: '8px'}}
+              sx={{borderRadius: '8px', minWidth: 200}}
           >
-            Tải ảnh mã QR
+            Tải ảnh từ thư viện
           </Button>
         </Stack>
 
-        {/* Hidden element for scanning uploaded images */}
-        <Box id="qr-reader-upload" sx={{ display: 'none' }}/>
+        {/* Hidden inputs: one for gallery upload, one to trigger native camera capture */}
+        <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            style={{display: 'none'}}
+        />
+        <input
+            type="file"
+            ref={captureInputRef}
+            onChange={handleCaptureChange}
+            accept="image/*"
+            capture="environment"
+            style={{display: 'none'}}
+        />
+
+        {/* Hidden element for scanning uploaded/captured images */}
+        <Box id="qr-reader-upload" sx={{display: 'none'}}/>
       </Box>
   );
 };
