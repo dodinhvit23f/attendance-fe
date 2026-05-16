@@ -39,6 +39,7 @@ import {MapPicker} from '@/components/admin/MapPicker';
 import {useLoading} from "@/components/root/client-layout";
 import {QRScannerInline} from '@/components/qr/QRScannerInline';
 import dayjs from 'dayjs';
+import {STORAGE_KEYS} from '@/lib/constants/storage';
 
 // Calculate distance between two coordinates in meters
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -76,6 +77,17 @@ export default function UserAttendancesPage() {
   const [rowsPerPage, setRowsPerPage] = useState(30);
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [userTier] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(STORAGE_KEYS.TIER)?.toLowerCase() ?? null;
+  });
+
+  const isFreeTier = !userTier || userTier === '' || userTier === 'free';
+  const todayStr = dayjs().format('DD/MM/YYYY');
+  const hasCheckedInToday = attendances.some(
+    (a) => a.checkInDate && parseDate(a.checkInDate).format('DD/MM/YYYY') === todayStr
+  );
+  const wrapWithAffiliateLink = isFreeTier && hasCheckedInToday;
 
   // Fetch attendances
   const fetchAttendances = useCallback(async () => {
@@ -744,13 +756,30 @@ export default function UserAttendancesPage() {
             ) : (
                 <>
                   <Button onClick={handleCloseDialog} disabled={isCheckingIn}>Đóng</Button>
-                  <Button
+                  {wrapWithAffiliateLink ? (
+                    <a
+                      href="https://s.shopee.vn/9024mBIIls"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{textDecoration: 'none'}}
+                    >
+                      <Button
+                        variant="contained"
+                        disabled={!userLocation || !facilityInRange || isCheckingIn}
+                        onClick={handleShowQRScanner}
+                      >
+                        Xác nhận chấm công
+                      </Button>
+                    </a>
+                  ) : (
+                    <Button
                       variant="contained"
                       disabled={!userLocation || !facilityInRange || isCheckingIn}
                       onClick={handleShowQRScanner}
-                  >
-                    Xác nhận chấm công
-                  </Button>
+                    >
+                      Xác nhận chấm công
+                    </Button>
+                  )}
                 </>
             )}
           </DialogActions>
