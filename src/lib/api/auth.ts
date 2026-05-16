@@ -66,6 +66,7 @@ export const clearAuthStorage = () => {
   localStorage.removeItem(STORAGE_KEYS.ROLES);
   localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
   localStorage.removeItem(STORAGE_KEYS.TENANT);
+  localStorage.removeItem(STORAGE_KEYS.TIER_DATA);
 };
 
 interface LoginRequest {
@@ -96,6 +97,7 @@ interface OtpLoginResponse {
     roles: string[];
     haveMFA: boolean;
     requiredGenerateOTP: boolean;
+    tier: string;
   };
 }
 

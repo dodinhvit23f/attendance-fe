@@ -8,6 +8,10 @@ import {useNotify} from "@/components/notification/NotificationProvider";
 import {useRouter} from "next/navigation";
 import {otpLoginApi} from '@/lib/api/auth';
 import {STORAGE_KEYS} from '@/lib/constants/storage';
+import {fetchTiersApi, storeTierData} from '@/lib/api/subscription';
+
+const MAX_ATTEMPTS = 5;
+const OTP_TTL_SECONDS = 180;
 
 export default function QRVerifyPage() {
   const theme = useTheme();
@@ -16,19 +20,58 @@ export default function QRVerifyPage() {
   const {setLoading} = useLoading()
 
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [failedAttempts, setFailedAttempts] = React.useState(0);
+  const [isLocked, setIsLocked] = React.useState(false);
+  const [secondsRemaining, setSecondsRemaining] = React.useState(OTP_TTL_SECONDS);
+  const [attemptError, setAttemptError] = React.useState('');
+
+  useEffect(() => {
+    if (secondsRemaining <= 0 || isLocked) return;
+    const id = setInterval(() => setSecondsRemaining(s => s - 1), 1000);
+    return () => clearInterval(id);
+  }, [secondsRemaining, isLocked]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+  const timerColor = secondsRemaining > 60
+    ? theme.palette.success.main
+    : secondsRemaining > 30
+      ? theme.palette.warning.main
+      : theme.palette.error.main;
+
+  const lockAndRedirect = (message: string) => {
+    setIsLocked(true);
+    localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
+    notifyError(message);
+    router.push('/');
+  };
 
   const handleConfirm = async (code: string) => {
-    if (isSubmitting) return;
+    if (isSubmitting || isLocked || secondsRemaining === 0) return;
     try {
       setIsSubmitting(true);
       setLoading(true);
+      setAttemptError('');
 
       const response = await otpLoginApi(code);
 
       localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.data.accessToken);
       localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.data.refreshToken);
       localStorage.setItem(STORAGE_KEYS.ROLES, JSON.stringify(response.data.roles));
+      localStorage.setItem(STORAGE_KEYS.TIER, response.data.tier);
       localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN)
+
+      try {
+        const tiers = await fetchTiersApi(response.data.accessToken);
+        storeTierData(tiers);
+      } catch {
+        // tier data is supplemental — do not block login on failure
+      }
+
       notifySuccess('Xác thực thành công!');
 
       if (response.data.roles.includes('ADMIN')) {
@@ -39,12 +82,30 @@ export default function QRVerifyPage() {
         router.push('/user');
       }
     } catch (error) {
-      if(error instanceof Error){
-        if (error.message == "ERROR_AUTH_011") {
+      if (error instanceof Error) {
+        const code = error.message;
+
+        if (code === 'OTP_NOT_CORRECT' || code === 'ERROR_AUTH_015') {
+          const next = failedAttempts + 1;
+          setFailedAttempts(next);
+          if (next >= MAX_ATTEMPTS) {
+            lockAndRedirect('Quá nhiều lần thử. Vui lòng đăng nhập lại.');
+          } else {
+            setAttemptError(`Mã không đúng. Còn ${MAX_ATTEMPTS - next} lần thử.`);
+          }
+          return;
+        }
+
+        if (code === 'OTP_RATE_LIMIT_EXCEEDED' || code === 'ERROR_AUTH_027') {
+          lockAndRedirect('Quá nhiều lần thử. Vui lòng đăng nhập lại.');
+          return;
+        }
+
+        if (code === 'INVALID_TOKEN' || code === 'ERROR_AUTH_011') {
           router.push('/');
-          localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN)
+          localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
           notifyError('Phiên đăng nhập hết hạn');
-          return
+          return;
         }
       }
 
@@ -65,6 +126,9 @@ export default function QRVerifyPage() {
 
     setLoading(false);
   }, [router, setLoading]);
+
+  const isExpired = secondsRemaining === 0;
+  const inputDisabled = isLocked || isExpired;
 
   return (
       <Container
@@ -117,8 +181,33 @@ export default function QRVerifyPage() {
                 </Typography>
               </Stack>
 
+              {/* Timer */}
+              <Stack alignItems="center">
+                {isExpired ? (
+                    <Typography
+                        variant="body2"
+                        sx={{color: theme.palette.error.main, fontWeight: 500, textAlign: 'center'}}
+                    >
+                      Mã đã hết hạn. Vui lòng đăng nhập lại.
+                    </Typography>
+                ) : (
+                    <Typography
+                        variant="body2"
+                        sx={{color: timerColor, fontWeight: 600, fontSize: '16px', fontVariantNumeric: 'tabular-nums'}}
+                    >
+                      {formatTime(secondsRemaining)}
+                    </Typography>
+                )}
+              </Stack>
+
               {/* Code Verification Component */}
-              <CodeVerification onConfirm={handleConfirm} codeLength={6} loading={isSubmitting}/>
+              <CodeVerification
+                  onConfirm={handleConfirm}
+                  codeLength={6}
+                  loading={isSubmitting}
+                  disabled={inputDisabled}
+                  externalError={attemptError}
+              />
             </Stack>
           </Paper>
         </Box>

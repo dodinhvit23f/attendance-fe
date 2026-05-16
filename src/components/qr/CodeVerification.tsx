@@ -8,12 +8,16 @@ interface CodeVerificationProps {
   onConfirm?: (code: string) => void;
   codeLength?: number;
   loading?: boolean;
+  disabled?: boolean;
+  externalError?: string;
 }
 
 export const CodeVerification: React.FC<CodeVerificationProps> = ({
   onConfirm,
   codeLength = 6,
   loading = false,
+  disabled = false,
+  externalError,
 }) => {
   const theme = useTheme();
   const [code, setCode] = useState<string[]>(Array(codeLength).fill(''));
@@ -127,6 +131,7 @@ export const CodeVerification: React.FC<CodeVerificationProps> = ({
             key={index}
           inputRef={(el) => (inputRefs.current[index] = el)}
             value={digit}
+            disabled={disabled}
             onChange={(e: ChangeEvent<HTMLInputElement>) =>
               handleChange(index, e.target.value)
             }
@@ -170,7 +175,7 @@ export const CodeVerification: React.FC<CodeVerificationProps> = ({
       </Stack>
 
       {/* Error Message */}
-      {error && (
+      {(externalError || error) && (
         <Typography
           variant="body2"
           sx={{
@@ -179,7 +184,7 @@ export const CodeVerification: React.FC<CodeVerificationProps> = ({
             textAlign: 'center',
           }}
         >
-          {error}
+          {externalError || error}
         </Typography>
       )}
 
@@ -220,7 +225,7 @@ export const CodeVerification: React.FC<CodeVerificationProps> = ({
         size="large"
         startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <CheckCircle />}
         onClick={handleConfirm}
-        disabled={!isCodeComplete || loading}
+        disabled={!isCodeComplete || loading || disabled}
         sx={{
           borderRadius: '24px',
           padding: '12px 24px',
