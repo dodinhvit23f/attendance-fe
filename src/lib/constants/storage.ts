@@ -8,4 +8,6 @@ export const STORAGE_KEYS = {
   ROLES: 'roles',
   OTP_TOKEN: 'OTP_TOKEN',
   TENANT: 'tenant',
+  TIER: 'tier',
+  TIER_DATA: 'tierData',
 } as const;

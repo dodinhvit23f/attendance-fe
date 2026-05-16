@@ -8,6 +8,7 @@ import {useNotify} from "@/components/notification/NotificationProvider";
 import {useRouter} from "next/navigation";
 import {otpLoginApi} from '@/lib/api/auth';
 import {STORAGE_KEYS} from '@/lib/constants/storage';
+import {fetchTiersApi, storeTierData} from '@/lib/api/subscription';
 
 export default function QRVerifyPage() {
   const theme = useTheme();
@@ -28,7 +29,16 @@ export default function QRVerifyPage() {
       localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.data.accessToken);
       localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.data.refreshToken);
       localStorage.setItem(STORAGE_KEYS.ROLES, JSON.stringify(response.data.roles));
+      localStorage.setItem(STORAGE_KEYS.TIER, response.data.tier);
       localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN)
+
+      try {
+        const tiers = await fetchTiersApi(response.data.accessToken);
+        storeTierData(tiers);
+      } catch {
+        // tier data is supplemental — do not block login on failure
+      }
+
       notifySuccess('Xác thực thành công!');
 
       if (response.data.roles.includes('ADMIN')) {
