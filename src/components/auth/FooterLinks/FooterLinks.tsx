@@ -30,7 +30,7 @@ export const FooterLinks: React.FC = () => {
           }}
         />
         <Link
-          href="#"
+          href="https://s.shopee.vn/9024mBIIls"
           underline="none"
           sx={{
             color: theme.palette.text.secondary,
