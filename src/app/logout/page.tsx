@@ -15,6 +15,9 @@ export default function LogoutPage() {
     localStorage.removeItem(STORAGE_KEYS.ROLES);
     localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.TIER)
+    localStorage.removeItem(STORAGE_KEYS.TIER_DATA)
+    localStorage.removeItem(STORAGE_KEYS.TENANT)
     // Delay 1 second then redirect to login page
     const timer = setTimeout(() => {
       router.push('/');
