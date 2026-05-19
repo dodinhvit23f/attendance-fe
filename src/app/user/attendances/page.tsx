@@ -40,6 +40,7 @@ import {useLoading} from "@/components/root/client-layout";
 import {QRScannerInline} from '@/components/qr/QRScannerInline';
 import dayjs from 'dayjs';
 import {STORAGE_KEYS} from '@/lib/constants/storage';
+import {isAffiliateLinkSuppressed, isEmbeddedWebView, setAffiliateLinkClicked} from '@/lib/api/subscription';
 
 // Calculate distance between two coordinates in meters
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -81,13 +82,17 @@ export default function UserAttendancesPage() {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem(STORAGE_KEYS.TIER)?.toLowerCase() ?? null;
   });
+  const [affiliateSuppressed, setAffiliateSuppressed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return isAffiliateLinkSuppressed();
+  });
 
   const isFreeTier = !userTier || userTier === '' || userTier === 'free';
   const todayStr = dayjs().format('DD/MM/YYYY');
   const hasCheckedInToday = attendances.some(
     (a) => a.checkInDate && parseDate(a.checkInDate).format('DD/MM/YYYY') === todayStr
   );
-  const wrapWithAffiliateLink = isFreeTier && hasCheckedInToday;
+  const wrapWithAffiliateLink = isFreeTier && hasCheckedInToday && !affiliateSuppressed && !isEmbeddedWebView();
 
   // Fetch attendances
   const fetchAttendances = useCallback(async () => {
@@ -762,6 +767,10 @@ export default function UserAttendancesPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{textDecoration: 'none'}}
+                      onClick={() => {
+                        setAffiliateLinkClicked();
+                        setAffiliateSuppressed(true);
+                      }}
                     >
                       <Button
                         variant="contained"

@@ -10,4 +10,5 @@ export const STORAGE_KEYS = {
   TENANT: 'tenant',
   TIER: 'tier',
   TIER_DATA: 'tierData',
+  AFFILIATE_LINK_CLICKED: 'affiliateLinkClicked',
 } as const;
