@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useEffect, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {Box, Container, Paper, Stack, Typography, useTheme} from '@mui/material';
 import {QRGenerator} from '@/components/qr/QRGenerator';
 import {useRouter} from 'next/navigation';
@@ -8,6 +8,7 @@ import {useLoading} from '@/components/root/client-layout';
 import {STORAGE_KEYS} from '@/lib/constants/storage';
 import {otpGenerateApi} from '@/lib/api/auth';
 import {useNotify} from '@/components/notification/NotificationProvider';
+import {clearQrCode, getQrCode, saveQrCode} from '@/lib/qrCache';
 
 export default function QRGeneratorPage() {
   const theme = useTheme();
@@ -15,50 +16,65 @@ export default function QRGeneratorPage() {
   const {setLoading} = useLoading();
   const {notifySuccess, notifyError} = useNotify();
   const [qrData, setQrData] = useState<string>('');
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
+
+  const fetchQrData = useCallback(() => {
+    const otpToken = localStorage.getItem(STORAGE_KEYS.OTP_TOKEN);
+
+    if (!otpToken || otpToken.trim() === '') {
+      router.push('/');
+      return;
+    }
+
+    const cached = getQrCode(otpToken);
+    if (cached) {
+      setQrData(cached.data);
+      setExpiresAt(cached.expiresAt);
+      return;
+    }
+
+    setLoading(true);
+
+    otpGenerateApi()
+      .then((response) => {
+        setQrData(response.data);
+        const exp = saveQrCode(response.data, otpToken);
+        setExpiresAt(exp);
+      })
+      .catch((error) => {
+        if (error instanceof Error) {
+          if (error.message == "ERROR_AUTH_004") {
+            notifyError('Hết thời gian nhập OTP. Vui lòng đăng nhập lại.');
+            router.push('/');
+            localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
+            clearQrCode();
+            return;
+          }
+
+          if (error.message == "ERROR_AUTH_011" || error.message == "ERROR_AUTH_004") {
+            notifyError('Không thể tạo mã QR. Vui lòng đăng nhập lại.');
+            router.push('/');
+            localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
+            clearQrCode();
+            return;
+          }
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [router, setLoading, notifyError]);
+
+  const handleExpired = useCallback(() => {
+    clearQrCode();
+    setQrData('');
+    setExpiresAt(null);
+    fetchQrData();
+  }, [fetchQrData]);
 
   useEffect(() => {
-    const fetchQrData = () => {
-      // Check if OTP_TOKEN exists
-      const otpToken = localStorage.getItem(STORAGE_KEYS.OTP_TOKEN);
-
-      if (!otpToken || otpToken.trim() === '') {
-        // Redirect to home if OTP_TOKEN doesn't exist or is empty
-        router.push('/');
-        return;
-      }
-
-      setLoading(true);
-
-      // Call API to generate OTP QR code
-      otpGenerateApi()
-        .then((response) => {
-          // Set the QR data (otpauth URL)
-          setQrData(response.data);
-        })
-        .catch((error) => {
-          if (error instanceof Error) {
-            if (error.message == "ERROR_AUTH_004") {
-              notifyError('Hết thời gian nhập OTP. Vui lòng đăng nhập lại.');
-              router.push('/');
-              localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
-              return;
-            }
-
-            if (error.message == "ERROR_AUTH_011" || error.message == "ERROR_AUTH_004") {
-              notifyError('Không thể tạo mã QR. Vui lòng đăng nhập lại.');
-              router.push('/');
-              localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
-              return;
-            }
-          }
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    };
-
     fetchQrData();
-  }, []);
+  }, [fetchQrData]);
 
   return (
       <Container
@@ -115,6 +131,8 @@ export default function QRGeneratorPage() {
               {/* QR Generator Component */}
               <QRGenerator
                 qrData={qrData}
+                expiresAt={expiresAt}
+                onExpired={handleExpired}
                 setLoading={setLoading}
                 notifySuccess={notifySuccess}
                 notifyError={notifyError}

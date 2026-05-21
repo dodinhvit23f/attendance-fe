@@ -11,4 +11,5 @@ export const STORAGE_KEYS = {
   TIER: 'tier',
   TIER_DATA: 'tierData',
   AFFILIATE_LINK_CLICKED: 'affiliateLinkClicked',
+  QR_CODE: 'qrCode',
 } as const;

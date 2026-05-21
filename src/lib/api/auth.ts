@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from '@/lib/constants/storage';
+import { clearQrCode } from '@/lib/qrCache';
 import { ApiErrorResponse, getErrorCode } from './types';
 
 const getTenant = (): string => {
@@ -67,6 +68,7 @@ export const clearAuthStorage = () => {
   localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
   localStorage.removeItem(STORAGE_KEYS.TENANT);
   localStorage.removeItem(STORAGE_KEYS.TIER_DATA);
+  clearQrCode();
 };
 
 interface LoginRequest {

@@ -1,22 +1,34 @@
 'use client';
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Box, Button, CircularProgress, IconButton, Stack, TextField, Tooltip, Typography, useTheme} from '@mui/material';
 import {CheckCircle} from '@mui/icons-material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import QRCode from 'react-qr-code';
 import {otpVerifyApi} from '@/lib/api/auth';
+import {clearQrCode} from '@/lib/qrCache';
 import {useRouter} from 'next/navigation';
 
 interface QRGeneratorProps {
   qrData?: string; // OTP auth URL or any data to encode
+  expiresAt?: number | null;
+  onExpired?: () => void;
   setLoading?: (loading: boolean) => void;
   notifySuccess?: (message: string) => void;
   notifyError?: (message: string) => void;
 }
 
+const formatRemaining = (ms: number): string => {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
 export const QRGenerator: React.FC<QRGeneratorProps> = ({
   qrData,
+  expiresAt,
+  onExpired,
   setLoading,
   notifySuccess,
   notifyError
@@ -25,6 +37,29 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
   const router = useRouter();
   const [otp, setOtp] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [remainingMs, setRemainingMs] = useState<number>(() =>
+    expiresAt ? Math.max(0, expiresAt - Date.now()) : 0,
+  );
+
+  useEffect(() => {
+    if (!expiresAt) {
+      setRemainingMs(0);
+      return;
+    }
+
+    const tick = () => {
+      const remaining = Math.max(0, expiresAt - Date.now());
+      setRemainingMs(remaining);
+      if (remaining <= 0) {
+        clearInterval(intervalId);
+        onExpired?.();
+      }
+    };
+
+    tick();
+    const intervalId = setInterval(tick, 1000);
+    return () => clearInterval(intervalId);
+  }, [expiresAt, onExpired]);
 
   const totpSecret = (() => {
     if (!qrData) return '';
@@ -71,6 +106,7 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
       setLoading?.(true);
       await otpVerifyApi(otp);
       notifySuccess?.('Xác thực OTP thành công');
+      clearQrCode();
       router.push('/');
     } catch (error) {
       if (error instanceof Error && (error as any).status === 401) {
@@ -131,6 +167,20 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
           >
             Quét mã QR này với ứng dụng xác thực (Google Authenticator, Authy...)
           </Typography>
+
+          {expiresAt && (
+            <Typography
+              variant="caption"
+              sx={{
+                color: remainingMs <= 30_000
+                  ? theme.palette.error.main
+                  : theme.palette.text.secondary,
+                fontWeight: 500,
+              }}
+            >
+              Mã QR hết hạn sau {formatRemaining(remainingMs)}
+            </Typography>
+          )}
 
           {totpSecret && (
             <Stack
