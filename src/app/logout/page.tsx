@@ -5,26 +5,31 @@ import { useRouter } from 'next/navigation';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import {STORAGE_KEYS} from "@/lib/constants";
+import {useLoading} from "@/components/root/client-layout";
 
 export default function LogoutPage() {
   const router = useRouter();
+  const { showLoading, hideLoading } = useLoading();
 
   useEffect(() => {
-    // Clear all localStorage
     localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.ROLES);
     localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.TIER)
-    localStorage.removeItem(STORAGE_KEYS.TIER_DATA)
-    localStorage.removeItem(STORAGE_KEYS.TENANT)
-    // Delay 1 second then redirect to login page
+    localStorage.removeItem(STORAGE_KEYS.TIER);
+    localStorage.removeItem(STORAGE_KEYS.TIER_DATA);
+    localStorage.removeItem(STORAGE_KEYS.TENANT);
+
+    showLoading('logout');
     const timer = setTimeout(() => {
       router.push('/');
     }, 1000);
 
-    return () => clearTimeout(timer);
-  }, [router]);
+    return () => {
+      clearTimeout(timer);
+      hideLoading();
+    };
+  }, [router, showLoading, hideLoading]);
 
   return (
     <Box

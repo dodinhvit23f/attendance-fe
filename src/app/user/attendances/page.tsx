@@ -71,7 +71,7 @@ export default function UserAttendancesPage() {
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
-  const {setLoading} = useLoading();
+  const {withLoading} = useLoading();
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -96,16 +96,17 @@ export default function UserAttendancesPage() {
 
   // Fetch attendances
   const fetchAttendances = useCallback(async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      setLoading(true);
-      const response = await getUserAttendances({
-        startDate,
-        endDate,
-        page,
-        size: rowsPerPage,
-        sort: 'id,desc',
-      });
+      const response = await withLoading('user-attendance-list', () =>
+        getUserAttendances({
+          startDate,
+          endDate,
+          page,
+          size: rowsPerPage,
+          sort: 'id,desc',
+        }),
+      );
       if (response.data?.attendances) {
         setAttendances(response.data.attendances);
         setTotalElements(response.data.totalElements);
@@ -115,9 +116,8 @@ export default function UserAttendancesPage() {
       notifyError('Không thể tải dữ liệu chấm công');
     } finally {
       setIsLoading(false);
-      setLoading(false);
     }
-  }, [startDate, endDate, page, rowsPerPage]);
+  }, [startDate, endDate, page, rowsPerPage, withLoading, notifyError]);
 
   // Fetch facilities and attendances on page load
   useEffect(() => {
@@ -431,14 +431,15 @@ export default function UserAttendancesPage() {
       return;
     }
 
+    setIsCheckingIn(true);
     try {
-      setIsCheckingIn(true);
-      setLoading(true);
-      await recordUserAttendance({
-        latitude: userLocation.lat,
-        longitude: userLocation.lng,
-        facilityId: matchedFacility.id,
-      });
+      await withLoading('user-checkin', () =>
+        recordUserAttendance({
+          latitude: userLocation.lat,
+          longitude: userLocation.lng,
+          facilityId: matchedFacility.id,
+        }),
+      );
       notifySuccess('Chấm công thành công!');
       handleCloseDialog();
       fetchAttendances();
@@ -448,7 +449,6 @@ export default function UserAttendancesPage() {
       setShowQRScanner(false);
     } finally {
       setIsCheckingIn(false);
-      setLoading(false);
     }
   };
 

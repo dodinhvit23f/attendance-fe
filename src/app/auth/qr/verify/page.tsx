@@ -17,7 +17,7 @@ export default function QRVerifyPage() {
   const theme = useTheme();
   const {notifySuccess, notifyError} = useNotify();
   const router = useRouter()
-  const {setLoading} = useLoading()
+  const {withLoading} = useLoading()
 
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [failedAttempts, setFailedAttempts] = React.useState(0);
@@ -52,35 +52,35 @@ export default function QRVerifyPage() {
 
   const handleConfirm = async (code: string) => {
     if (isSubmitting || isLocked || secondsRemaining === 0) return;
+    setIsSubmitting(true);
+    setAttemptError('');
     try {
-      setIsSubmitting(true);
-      setLoading(true);
-      setAttemptError('');
+      await withLoading('otp-verify', async () => {
+        const response = await otpLoginApi(code);
 
-      const response = await otpLoginApi(code);
+        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.data.accessToken);
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.data.refreshToken);
+        localStorage.setItem(STORAGE_KEYS.ROLES, JSON.stringify(response.data.roles));
+        localStorage.setItem(STORAGE_KEYS.TIER, response.data.tier);
+        localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
 
-      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.data.accessToken);
-      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.data.refreshToken);
-      localStorage.setItem(STORAGE_KEYS.ROLES, JSON.stringify(response.data.roles));
-      localStorage.setItem(STORAGE_KEYS.TIER, response.data.tier);
-      localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN)
+        try {
+          const tiers = await fetchTiersApi(response.data.accessToken);
+          storeTierData(tiers);
+        } catch {
+          // tier data is supplemental — do not block login on failure
+        }
 
-      try {
-        const tiers = await fetchTiersApi(response.data.accessToken);
-        storeTierData(tiers);
-      } catch {
-        // tier data is supplemental — do not block login on failure
-      }
+        notifySuccess('Xác thực thành công!');
 
-      notifySuccess('Xác thực thành công!');
-
-      if (response.data.roles.includes('ADMIN')) {
-        router.push('/admin');
-      } else if (response.data.roles.includes('MANAGER')) {
-        router.push('/manager');
-      } else {
-        router.push('/user');
-      }
+        if (response.data.roles.includes('ADMIN')) {
+          router.push('/admin');
+        } else if (response.data.roles.includes('MANAGER')) {
+          router.push('/manager');
+        } else {
+          router.push('/user');
+        }
+      });
     } catch (error) {
       if (error instanceof Error) {
         const code = error.message;
@@ -112,20 +112,15 @@ export default function QRVerifyPage() {
       notifyError('Xác thực thất bại. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
-      setLoading(false);
     }
   };
 
   useEffect(() => {
     const otpToken = localStorage.getItem(STORAGE_KEYS.OTP_TOKEN);
-
     if (!otpToken || otpToken.trim() === '') {
       router.push('/');
-      return;
     }
-
-    setLoading(false);
-  }, [router, setLoading]);
+  }, [router]);
 
   const isExpired = secondsRemaining === 0;
   const inputDisabled = isLocked || isExpired;

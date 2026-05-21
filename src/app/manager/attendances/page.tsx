@@ -84,7 +84,7 @@ export default function ManagerAttendancesPage() {
   const [facilities, setFacilities] = useState<ManagerFacility[]>([]);
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const {setLoading} = useLoading();
+  const {withLoading} = useLoading();
 
   // Shift management state
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -129,16 +129,17 @@ export default function ManagerAttendancesPage() {
 
   // Fetch attendances
   const fetchAttendances = useCallback(async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      setLoading(true);
-      const response = await getManagerAttendances({
-        startDate,
-        endDate,
-        page,
-        size: rowsPerPage,
-        sort: 'checkInDate,desc',
-      });
+      const response = await withLoading('manager-attendance-list', () =>
+        getManagerAttendances({
+          startDate,
+          endDate,
+          page,
+          size: rowsPerPage,
+          sort: 'checkInDate,desc',
+        }),
+      );
       if (response.data?.attendances) {
         setAttendances(response.data.attendances);
         setTotalElements(response.data.totalElements ?? response.data.attendances.length);
@@ -151,9 +152,8 @@ export default function ManagerAttendancesPage() {
       notifyError('Không thể tải dữ liệu chấm công');
     } finally {
       setIsLoading(false);
-      setLoading(false);
     }
-  }, [startDate, endDate, page, rowsPerPage]);
+  }, [startDate, endDate, page, rowsPerPage, withLoading, notifyError]);
 
   // Fetch facilities and attendances on page load
   useEffect(() => {
@@ -404,18 +404,19 @@ export default function ManagerAttendancesPage() {
     const checkInDateTime = `${checkInDate}T${checkInTime}:00.000+07:00`;
     const checkOutDateTime = `${checkInDate}T${checkOutTime}:00.000+07:00`;
 
+    setIsSubmittingManual(true);
     try {
-      setIsSubmittingManual(true);
-      setLoading(true);
-      await recordManualAttendance({
-        employeeId: selectedEmployeeId as number,
-        shiftId: selectedShiftIdManual as number,
-        checkInDate,
-        checkInTime: checkInDateTime,
-        checkOutTime: checkOutDateTime,
-        facilityId: selectedFacilityId as number,
-        reason: finalReason,
-      });
+      await withLoading('manual-attendance', () =>
+        recordManualAttendance({
+          employeeId: selectedEmployeeId as number,
+          shiftId: selectedShiftIdManual as number,
+          checkInDate,
+          checkInTime: checkInDateTime,
+          checkOutTime: checkOutDateTime,
+          facilityId: selectedFacilityId as number,
+          reason: finalReason,
+        }),
+      );
       notifySuccess('Đã ghi nhận chấm công thủ công!');
       handleCloseManualAttendanceDialog();
       fetchAttendances();
@@ -427,7 +428,6 @@ export default function ManagerAttendancesPage() {
       }
     } finally {
       setIsSubmittingManual(false);
-      setLoading(false);
     }
   };
 
@@ -617,22 +617,20 @@ export default function ManagerAttendancesPage() {
       return;
     }
 
-    // Call API to record attendance
     try {
-      setLoading(true);
-      await recordAttendance({
-        latitude: userLocation.lat,
-        longitude: userLocation.lng,
-        facilityId: matchedFacility.id,
-      });
+      await withLoading('manager-checkin', () =>
+        recordAttendance({
+          latitude: userLocation.lat,
+          longitude: userLocation.lng,
+          facilityId: matchedFacility.id,
+        }),
+      );
       notifySuccess('Chấm công thành công!');
       handleCloseDialog();
     } catch (error) {
       console.error('Failed to record attendance:', error);
       notifyError('Không thể ghi nhận chấm công. Vui lòng thử lại.');
       setShowQRScanner(false);
-    } finally {
-      setLoading(false);
     }
   };
 

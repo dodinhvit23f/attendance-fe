@@ -37,7 +37,7 @@ import {ErrorMessage} from '@/lib/constants';
 import {getManagerFacilities, ManagerFacility} from "@/lib/api/manager/facilities";
 
 export default function ManagerUsersPage() {
-  const {setLoading} = useLoading();
+  const {withLoading} = useLoading();
   const {notifyError, notifySuccess} = useNotify();
   const [employees, setEmployees] = useState<ManagerEmployee[]>([]);
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
@@ -82,13 +82,14 @@ export default function ManagerUsersPage() {
   // Fetch employees
   const fetchEmployees = useCallback(async () => {
     try {
-      setLoading(true);
-      const response = await getManagerUsers({
-        facilityIds: selectedFacilityIds.length > 0 ? selectedFacilityIds : undefined,
-        page,
-        size: rowsPerPage,
-        sort: 'id,desc',
-      });
+      const response = await withLoading('manager-users-list', () =>
+        getManagerUsers({
+          facilityIds: selectedFacilityIds.length > 0 ? selectedFacilityIds : undefined,
+          page,
+          size: rowsPerPage,
+          sort: 'id,desc',
+        }),
+      );
       if (Array.isArray(response.data.employees)) {
         setEmployees(response.data.employees);
         setTotalElements(response.data.totalElements ?? response.data.employees.length);
@@ -109,10 +110,9 @@ export default function ManagerUsersPage() {
       setEmployees([]);
       setTotalElements(0);
     } finally {
-      setLoading(false);
-      setIsLoadingEmployees(false)
+      setIsLoadingEmployees(false);
     }
-  }, [selectedFacilityIds, page, rowsPerPage, setLoading, notifyError]);
+  }, [selectedFacilityIds, page, rowsPerPage, withLoading, notifyError]);
 
   useEffect(() => {
     if (isLoadingEmployees) {

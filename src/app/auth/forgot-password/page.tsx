@@ -32,7 +32,7 @@ import { useNotify } from '@/components/notification/NotificationProvider';
 import { forgotPasswordApi } from '@/lib/api/auth';
 import { ApiErrorResponse } from '@/lib/api/types';
 import { ErrorMessage } from '@/lib/constants/errorMessages';
-import {useLoading} from "@/components/root/client-layout";
+import { useLoading } from '@/components/root/client-layout';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -67,7 +67,6 @@ const OtpDialog: React.FC<OtpDialogProps> = ({
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const { setLoading: setGlobalLoading } = useLoading();
 
   useEffect(() => {
     if (open) {
@@ -176,10 +175,6 @@ const OtpDialog: React.FC<OtpDialogProps> = ({
   };
 
   const isComplete = digits.every(d => d !== '');
-
-  useEffect(() => {
-    setGlobalLoading(false)
-  }, []);
 
   return (
     <Dialog
@@ -373,6 +368,7 @@ export default function ForgotPasswordPage() {
   const theme = useTheme();
   const router = useRouter();
   const { notifySuccess } = useNotify();
+  const { withLoading } = useLoading();
 
   const [username, setUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -434,7 +430,9 @@ export default function ForgotPasswordPage() {
   };
 
   const handleOtpConfirm = async (otp: string) => {
-    await forgotPasswordApi(username, newPassword, otp);
+    await withLoading('forgot-password', () =>
+      forgotPasswordApi(username, newPassword, otp),
+    );
     notifySuccess('Đặt lại mật khẩu thành công!');
     setOtpDialogOpen(false);
     router.push('/');

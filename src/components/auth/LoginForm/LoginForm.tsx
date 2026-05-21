@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {Button, CircularProgress, IconButton, InputAdornment, Stack, TextField, useTheme} from '@mui/material';
 import {Visibility, VisibilityOff} from '@mui/icons-material';
 import {useLoading} from "@/components/root/client-layout";
@@ -21,54 +21,46 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const {setLoading} = useLoading()
+  const {withLoading} = useLoading()
   const {notifySuccess, notifyError} = useNotify();
   const router = useRouter()
   const searchParams = useSearchParams();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
-    setLoading(true);
 
     const platform = searchParams.get('platform');
     if (platform) {
       localStorage.setItem(STORAGE_KEYS.TENANT, platform);
     }
 
-    if(!platform && !localStorage.getItem(STORAGE_KEYS.TENANT)){
+    if (!platform && !localStorage.getItem(STORAGE_KEYS.TENANT)) {
       localStorage.setItem(STORAGE_KEYS.TENANT, "vincharm");
     }
 
-    loginApi(email, password, platform || undefined)
-    .then((response) => {
-      notifySuccess("Đăng nhập thành công")
-      localStorage.setItem(STORAGE_KEYS.OTP_TOKEN, response.data.otpToken)
+    try {
+      const response = await withLoading('login', () =>
+        loginApi(email, password, platform || undefined),
+      );
+      notifySuccess("Đăng nhập thành công");
+      localStorage.setItem(STORAGE_KEYS.OTP_TOKEN, response.data.otpToken);
       if (response.data.requiredGenerateOTP) {
-        router.push("/auth/qr/generator")
-        return
+        router.push("/auth/qr/generator");
+        return;
       }
-      router.push("/auth/qr/verify")
-      return;
-    })
-    .catch((reason) => {
-      notifyError(ErrorMessage.getMessage(reason.message, 'Tài khoản đăng nhập hoặc mật khẩu không đúng'))
-
-    })
-    .finally(() => {
+      router.push("/auth/qr/verify");
+    } catch (reason: any) {
+      notifyError(ErrorMessage.getMessage(reason?.message, 'Tài khoản đăng nhập hoặc mật khẩu không đúng'));
+    } finally {
       setIsSubmitting(false);
-      setLoading(false);
-    })
+    }
   };
 
   const handleTogglePassword = () => {
     setShowPassword(!showPassword);
   };
-
-  useEffect(() => {
-    setLoading(false)
-  }, [])
 
   return (
       <Stack component="form" onSubmit={handleSubmit} spacing={2}>

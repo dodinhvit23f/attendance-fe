@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import { useRouter, usePathname } from 'next/navigation';
 import { verifyTokenApi, refreshTokenApi, clearAuthStorage } from '@/lib/api/auth';
 import { STORAGE_KEYS } from '@/lib/constants/storage';
+import { useLoading } from '@/components/root/LoadingProvider';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -61,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { withLoading } = useLoading();
 
   const checkAuth = useCallback(async (): Promise<boolean> => {
     const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
@@ -100,28 +102,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initAuth = async () => {
-
-
       const isPublicPath = PUBLIC_PATHS.some(path => pathname === path || pathname.startsWith("/auth"));
 
       if (isPublicPath) {
-        // Check if user has valid token on public path, redirect based on role
         if (localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)) {
-          const isValid = await checkAuth();
+          const isValid = await withLoading('auth-check', checkAuth);
 
           if (isValid) {
             const redirectPath = getRedirectPathByRole();
             router.replace(redirectPath);
-            return
+            return;
           }
         }
         setIsAuthenticated(false);
         return;
       }
 
-      // Protected routes - check authentication
-
-      const isValid = await checkAuth();
+      const isValid = await withLoading('auth-check', checkAuth);
 
       if (!isValid) {
         router.replace('/');
@@ -129,19 +126,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Check role-based access
       if (!hasRoleForPath(pathname)) {
-        // User doesn't have required role, redirect to their allowed route
         const redirectPath = getRedirectPathByRole();
         router.replace(redirectPath);
         setIsAuthenticated(false);
       }
-
-
     };
 
     initAuth();
-  }, [pathname, checkAuth, router]);
+  }, [pathname, checkAuth, router, withLoading]);
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, checkAuth }}>

@@ -26,13 +26,11 @@ import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { FacilityDialog, FacilityData } from '@/components/admin';
-import { useLoading } from '@/components/root/client-layout';
 import { getFacilities, Facility, toggleFacilityStatus } from '@/lib/api/admin';
 import { useNotify } from '@/components/notification/NotificationProvider';
 import { ErrorMessage } from '@/lib/constants';
 
 export default function FacilitiesPage() {
-  const { setLoading } = useLoading();
   const { notifyError, notifySuccess } = useNotify();
   const [facilities, setFacilities] = React.useState<Facility[]>([]);
   const [isLoadingData, setIsLoadingData] = React.useState(true);
@@ -64,7 +62,6 @@ export default function FacilitiesPage() {
       setTotalElements(0);
     } finally {
       setIsLoadingData(false);
-      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, rowsPerPage]);

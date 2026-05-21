@@ -47,7 +47,7 @@ export function BulkShiftAssignmentDialog({
   shifts,
 }: BulkShiftAssignmentDialogProps) {
   const { notifyError, notifySuccess } = useNotify();
-  const { setLoading } = useLoading();
+  const { withLoading } = useLoading();
 
   const [selectedAssignDate, setSelectedAssignDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DD'));
   const [bulkAssignCalendarDate, setBulkAssignCalendarDate] = useState<dayjs.Dayjs | null>(dayjs().add(1, 'day'));
@@ -134,16 +134,17 @@ export function BulkShiftAssignmentDialog({
     }
 
     try {
-      setLoading(true);
       const assignments = Object.entries(employeeShiftChanges).map(([userId, shiftId]) => ({
         userId: Number(userId),
         shiftId,
       }));
 
-      await bulkAssignShifts({
-        assignDate: formatDateWithTimezone(selectedAssignDate),
-        assignments,
-      });
+      await withLoading('bulk-assign-shifts', () =>
+        bulkAssignShifts({
+          assignDate: formatDateWithTimezone(selectedAssignDate),
+          assignments,
+        }),
+      );
 
       notifySuccess('Phân ca thành công!');
       handleClose();
@@ -153,8 +154,6 @@ export function BulkShiftAssignmentDialog({
         const errorMessage = ErrorMessage.getMessage(error.message, 'Không thể phân ca');
         notifyError(errorMessage);
       }
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import {
   Box,
   Button,
@@ -25,6 +25,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLoading } from '@/components/root/client-layout';
 
+
 const planLabels: Record<string, string> = {
   free: 'Miễn Phí',
   pro: 'Pro',
@@ -47,11 +48,7 @@ function SignUpForm() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { setLoading: setGlobalLoading } = useLoading();
-
-  useEffect(() => {
-    setGlobalLoading(false);
-  }, []);
+  const { withLoading } = useLoading();
 
   const handleChange = (field: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [field]: e.target.value }));
@@ -61,9 +58,11 @@ function SignUpForm() {
     e.preventDefault();
     setLoading(true);
     try {
-      // TODO: call register API
-      await new Promise((r) => setTimeout(r, 800));
-      router.push('/');
+      await withLoading('signup', async () => {
+        // TODO: call register API
+        await new Promise((r) => setTimeout(r, 800));
+        router.push('/');
+      });
     } finally {
       setLoading(false);
     }

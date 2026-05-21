@@ -15,7 +15,6 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
-import {useLoading} from "@/components/root/client-layout";
 
 interface PermissionStatus {
   granted: boolean;
@@ -24,9 +23,6 @@ interface PermissionStatus {
 }
 
 export default function UserDashboard() {
-
-  const { setLoading } = useLoading();
-
   const [cameraPermission, setCameraPermission] = useState<PermissionStatus>({
     granted: false,
     loading: false,
@@ -39,10 +35,8 @@ export default function UserDashboard() {
     error: null,
   });
 
-  // Automatically request permissions when page loads
   useEffect(() => {
     requestAllPermissions();
-    setLoading(false);
   }, []);
 
   const requestAllPermissions = async () => {

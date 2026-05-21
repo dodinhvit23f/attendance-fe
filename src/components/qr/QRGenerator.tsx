@@ -8,12 +8,12 @@ import QRCode from 'react-qr-code';
 import {otpVerifyApi} from '@/lib/api/auth';
 import {clearQrCode} from '@/lib/qrCache';
 import {useRouter} from 'next/navigation';
+import {useLoading} from '@/components/root/client-layout';
 
 interface QRGeneratorProps {
   qrData?: string; // OTP auth URL or any data to encode
   expiresAt?: number | null;
   onExpired?: () => void;
-  setLoading?: (loading: boolean) => void;
   notifySuccess?: (message: string) => void;
   notifyError?: (message: string) => void;
 }
@@ -29,12 +29,12 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
   qrData,
   expiresAt,
   onExpired,
-  setLoading,
   notifySuccess,
   notifyError
 }) => {
   const theme = useTheme();
   const router = useRouter();
+  const { withLoading } = useLoading();
   const [otp, setOtp] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [remainingMs, setRemainingMs] = useState<number>(() =>
@@ -101,10 +101,9 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      setLoading?.(true);
-      await otpVerifyApi(otp);
+      await withLoading('otp-verify-qr', () => otpVerifyApi(otp));
       notifySuccess?.('Xác thực OTP thành công');
       clearQrCode();
       router.push('/');
@@ -118,7 +117,6 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
       }
     } finally {
       setIsSubmitting(false);
-      setLoading?.(false);
     }
   };
 

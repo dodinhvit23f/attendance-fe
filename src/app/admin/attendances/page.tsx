@@ -50,7 +50,7 @@ import dayjs from 'dayjs';
 
 export default function AttendancesPage() {
 
-  const { setLoading } = useLoading();
+  const { withLoading } = useLoading();
   const { notifySuccess, notifyError } = useNotify();
   const [statusFilter, setStatusFilter] = useState('all');
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -82,17 +82,18 @@ export default function AttendancesPage() {
   };
 
   const fetchAttendances = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      setLoading(true);
-      const response = await getAttendances({
-        startDate,
-        endDate,
-        userNames: selectedUserNames.length > 0 ? selectedUserNames.join(',') : undefined,
-        page,
-        size: rowsPerPage,
-        sort: 'id,desc',
-      });
+      const response = await withLoading('admin-attendance-list', () =>
+        getAttendances({
+          startDate,
+          endDate,
+          userNames: selectedUserNames.length > 0 ? selectedUserNames.join(',') : undefined,
+          page,
+          size: rowsPerPage,
+          sort: 'id,desc',
+        }),
+      );
       if (response.data?.attendances) {
         setAttendances(response.data.attendances);
         setTotalElements(response.data.totalElements ?? response.data.attendances.length);
@@ -110,7 +111,6 @@ export default function AttendancesPage() {
       setTotalElements(0);
     } finally {
       setIsLoading(false);
-      setLoading(false);
     }
   };
 

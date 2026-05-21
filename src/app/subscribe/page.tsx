@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   Box,
   Button,
@@ -10,7 +10,6 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { useLoading } from '@/components/root/client-layout';
 import {
   CheckCircle,
   LockOutlined,
@@ -43,11 +42,6 @@ interface Tier {
 export default function SubscribePage() {
   const theme = useTheme();
   const router = useRouter();
-  const { setLoading } = useLoading();
-
-  useEffect(() => {
-    setLoading(false);
-  }, []);
 
   const tiers: Tier[] = [
     {

@@ -34,7 +34,7 @@ import {useNotify} from '@/components/notification/NotificationProvider';
 import {ErrorMessage} from '@/lib/constants';
 
 export default function EmployeesPage() {
-  const {setLoading} = useLoading();
+  const {withLoading} = useLoading();
   const {notifySuccess, notifyError} = useNotify();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [debouncedQuery, setDebouncedQuery] = React.useState('');
@@ -54,15 +54,16 @@ export default function EmployeesPage() {
   const [isLoading, setIsLoading] = React.useState(false);
 
   const fetchEmployees = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setIsLoading(true);
-      setLoading(true);
-      setError(null);
-      const response = await getEmployees({
-        page,
-        size: rowsPerPage,
-        tenant: 'attendance',
-      });
+      const response = await withLoading('admin-employees-list', () =>
+        getEmployees({
+          page,
+          size: rowsPerPage,
+          tenant: 'attendance',
+        }),
+      );
       setEmployees(response.data.employees);
       setTotalElements(response.data.totalElements ?? 0);
     } catch (err) {
@@ -70,7 +71,6 @@ export default function EmployeesPage() {
       console.error('Error fetching employees:', err);
     } finally {
       setIsLoading(false);
-      setLoading(false);
     }
   };
 

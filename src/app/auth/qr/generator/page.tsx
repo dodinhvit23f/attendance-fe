@@ -13,12 +13,12 @@ import {clearQrCode, getQrCode, saveQrCode} from '@/lib/qrCache';
 export default function QRGeneratorPage() {
   const theme = useTheme();
   const router = useRouter();
-  const {setLoading} = useLoading();
+  const {withLoading} = useLoading();
   const {notifySuccess, notifyError} = useNotify();
   const [qrData, setQrData] = useState<string>('');
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
 
-  const fetchQrData = useCallback(() => {
+  const fetchQrData = useCallback(async () => {
     const otpToken = localStorage.getItem(STORAGE_KEYS.OTP_TOKEN);
 
     if (!otpToken || otpToken.trim() === '') {
@@ -33,37 +33,31 @@ export default function QRGeneratorPage() {
       return;
     }
 
-    setLoading(true);
-
-    otpGenerateApi()
-      .then((response) => {
-        setQrData(response.data);
-        const exp = saveQrCode(response.data, otpToken);
-        setExpiresAt(exp);
-      })
-      .catch((error) => {
-        if (error instanceof Error) {
-          if (error.message == "ERROR_AUTH_004") {
-            notifyError('Hết thời gian nhập OTP. Vui lòng đăng nhập lại.');
-            router.push('/');
-            localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
-            clearQrCode();
-            return;
-          }
-
-          if (error.message == "ERROR_AUTH_011" || error.message == "ERROR_AUTH_004") {
-            notifyError('Không thể tạo mã QR. Vui lòng đăng nhập lại.');
-            router.push('/');
-            localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
-            clearQrCode();
-            return;
-          }
+    try {
+      const response = await withLoading('otp-generate', () => otpGenerateApi());
+      setQrData(response.data);
+      const exp = saveQrCode(response.data, otpToken);
+      setExpiresAt(exp);
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message == "ERROR_AUTH_004") {
+          notifyError('Hết thời gian nhập OTP. Vui lòng đăng nhập lại.');
+          router.push('/');
+          localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
+          clearQrCode();
+          return;
         }
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [router, setLoading, notifyError]);
+
+        if (error.message == "ERROR_AUTH_011") {
+          notifyError('Không thể tạo mã QR. Vui lòng đăng nhập lại.');
+          router.push('/');
+          localStorage.removeItem(STORAGE_KEYS.OTP_TOKEN);
+          clearQrCode();
+          return;
+        }
+      }
+    }
+  }, [router, withLoading, notifyError]);
 
   const handleExpired = useCallback(() => {
     clearQrCode();
@@ -133,7 +127,6 @@ export default function QRGeneratorPage() {
                 qrData={qrData}
                 expiresAt={expiresAt}
                 onExpired={handleExpired}
-                setLoading={setLoading}
                 notifySuccess={notifySuccess}
                 notifyError={notifyError}
               />
